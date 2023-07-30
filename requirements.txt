@@ -1,0 +1,13 @@
+pandas==1.5.2
+beautifulsoup4==-4.12.2
+html2text
+openpyxl==3.0.10
+nltk==3.8
+scikit-learn==1.2.0
+neo4j==5.3.0
+google-cloud-bigquery
+google-cloud-storage
+matplotlib==3.6.2
+pandas-gbq
+openai
+gcsfs
