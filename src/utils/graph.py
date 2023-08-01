@@ -17,31 +17,35 @@ from utils.utils import timing
 # Neo4j Connection
 # *********************************************************************
 
-# Operating System
+# Retrieves the Operating System platform.
+
 PLATFORM = platform.system()
 
-# Detect platform and choose local or remote NEO4J server
+# --------------------------------------------------------------------------
+
+NEO4J_URI = os.environ.get('BABAR_NEO4J_URI','neo4j://localhost:7687')
+NEO4J_USER = os.environ.get('BABAR_NEO4J_USER', 'neo4j')
+NEO4J_PWD = os.environ.get('BABAR_NEO4J_PWD', 'neo4j')
+
+
+# --------------------------------------------------------------------------
 
 def set_graph_platform(platform):
+    'Sets Neo4j authentication globals based on platform.'
+
+    global NEO4J_URI, NEO4J_USER, NEO4J_PWD
+    
     if platform == "Windows" or platform == 'Darwin':
         NEO4J_URI = 'neo4j://localhost:7687'
         NEO4J_USER = 'neo4j'
         NEO4J_PWD = os.environ.get('PPWD1', 'neo4j')
     else:
-        NEO4J_URI = os.environ.get('KGML_NEO4J_URI')
-        NEO4J_USER = os.environ.get('KGML_NEO4J_USER')
-        NEO4J_PWD = os.environ.get('KGML_NEO4J_PWD')
+        NEO4J_URI = os.environ.get('BABAR_NEO4J_URI','neo4j://localhost:7687')
+        NEO4J_USER = os.environ.get('BABAR_NEO4J_USER', 'neo4j')
+        NEO4J_PWD = os.environ.get('BABAR_NEO4J_PWD', 'neo4j')
 
-# --------------------------------------------------------------------------
+    return True
 
-NEO4J_URI = os.environ.get('KGML_NEO4J_URI', os.environ['NEO4J_ADEO_URI'])
-NEO4J_USER = os.environ.get('KGML_NEO4J_USER', os.environ['NEO4J_ADEO_USER'])
-NEO4J_PWD = os.environ.get('KGML_NEO4J_PWD', os.environ['NEO4J_ADEO_PWD'])
-
-
-ADEO_NEO4J_URI = NEO4J_URI
-ADEO_NEO4J_USER = NEO4J_USER
-ADEO_NEO4J_PWD = NEO4J_PWD
 
 # --------------------------------------------------------------------------
 # Graph_app Neo4j driver session Class
@@ -99,17 +103,17 @@ def extract_nodes(result, key='n'):
 
 
 # **************************************************************************
-# ADEO Graph Specific Operations
+# Graph Specific Operations
 # **************************************************************************
 
 SERVER = 'remote'
 
 # --------------------------------------------------------------------------
-# Adeo_graph_p 
+# Remote Graph Predicate
 # --------------------------------------------------------------------------
 
-def adeo_graph_p(uri, server=SERVER):
-    'Return True if <uri> is an Adeo graph and server is not local.'
+def remote_graph_p(uri, server=SERVER):
+    'Return True if <uri> is a remote graph and server is not local.'
     
     return not (uri == 'neo4j://localhost:7687') and not (server == 'local')
 
@@ -199,15 +203,19 @@ def nodes_to_df(nodes):
     return df
 
 # --------------------------------------------------------------------------
-# ADEO Concepts
+# Babar Concepts
 # --------------------------------------------------------------------------
 
 @timing
-def query_nodes(uri=ADEO_NEO4J_URI, user=ADEO_NEO4J_USER, pwd=ADEO_NEO4J_PWD,
-                label='ADEO_Concept'):
+def query_nodes(uri=NEO4J_URI, user=NEO4J_USER, pwd=NEO4J_PWD,
+                label=None):
     'Returns a dataframe of result nodes.'
-    
-    query = f"MATCH (n:{label}) RETURN n"
+
+    if label is not None:
+        query = f"MATCH (n:{label}) RETURN n"
+    else:
+        query = "MATCH (n) RETURN n"
+
     result, driver = run_query(query, uri=uri, user=user, pwd=pwd)
     driver.close()
     
@@ -219,11 +227,11 @@ def query_nodes(uri=ADEO_NEO4J_URI, user=ADEO_NEO4J_USER, pwd=ADEO_NEO4J_PWD,
 
 # ----------------------------------------------------------------
 
-def load_concepts(bu, data_name='knowledge_graph_concepts', 
-                  source='storage', storage='orphans'):
-    'Loads a nodes file for a particular BU.'
+def load_concepts(project_name, data_name='babar_concepts', 
+                  source='storage', storage='data'):
+    'Loads a nodes file for a particular project.'
 
-    df = load_data(bu, data_name, 'csv', source)
+    df = load_data(project_name, data_name, 'csv', source)
     if 'index' in df.columns:
         df.drop('index', axis=1, inplace=True)
         
@@ -232,22 +240,21 @@ def load_concepts(bu, data_name='knowledge_graph_concepts',
 
 # ----------------------------------------------------------------
 
-def save_adeo_concepts(bu, df, data_name='knowledge_graph_concepts',
-                       destination='storage', storage='orphans'):
+def save_concepts(project_name, df, data_name='babar_concepts',
+                       destination='storage', storage='data'):
     'Saves the concept relationships of a particular BU.'
 
-    save_data(bu, data_name, 'csv', df, destination)
+    save_data(project_name, data_name, 'csv', df, destination)
     
     return True
 
 
 # --------------------------------------------------------------------------
-# Adeo Products
+# Products
 # --------------------------------------------------------------------------
 
-def get_adeo_products(uri=ADEO_NEO4J_URI, user=ADEO_NEO4J_USER,
-                      pwd=ADEO_NEO4J_PWD):
-    query = "MATCH (n:ADEO_Product) RETURN n"
+def get_products(uri=NEO4J_URI, user=NEO4J_USER, pwd=NEO4J_PWD):
+    query = "MATCH (n) RETURN n"
     result, driver = run_query(query, uri=uri, user=user, pwd=pwd)
     driver.close()
     if valid_result_p(result) is True:
@@ -258,15 +265,13 @@ def get_adeo_products(uri=ADEO_NEO4J_URI, user=ADEO_NEO4J_USER,
 
 
 # --------------------------------------------------------------------------
-# Adeo Inter-Product Relationships
+# Babar Inter-Product Relationships
 # --------------------------------------------------------------------------
 
-def get_adeo_product_relationships(uri=ADEO_NEO4J_URI, user=ADEO_NEO4J_USER,
-                                   pwd=ADEO_NEO4J_PWD):
-    query = """MATCH
-    p=(n:ADEO_Product)-[:COULD_TRIGGER_THE_PURCHASE_OF]-(m:ADEO_Product)
-    RETURN p, n, m
-    """
+def get_product_relationships(uri=NEO4J_URI, user=NEO4J_USER, pwd=NEO4J_PWD):
+    query = '''
+    MATCH p=(n)-[]-(m) RETURN p, n, m
+    '''
     result, driver = run_query(query, uri=uri, user=user, pwd=pwd)
     driver.close()
     return result
