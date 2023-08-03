@@ -12,4 +12,5 @@ pandas-gbq
 openai
 gcsfs
 gsheets
-
+pypdf2
+git+https://github.com/pdfminer/pdfminer.six.git@761410e66ce08f8407674a574069210a8d9d09dd

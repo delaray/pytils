@@ -1,5 +1,5 @@
 # *********************************************************************
-# KGML Graph Utilities and Functions
+# Graph Utilities and Functions
 # *********************************************************************
 
 # Python Imports
