@@ -17,6 +17,8 @@ from numpy import dtype
 import pandas as pd
 
 # GCP Imports
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 from google.cloud import bigquery
 from google.cloud import storage
 import gcsfs
@@ -879,6 +881,52 @@ def load_results(model_name, results_name, data_type, source,
     else:
         logger.error(f'Error: Invalid destination {source}.')
         return None
+
+
+# ****************************************************************
+# Google Sheets 
+# ****************************************************************
+
+AUTH_FILE = os.environ['GOOGLE_APPLICATION_CREDENTIALS']
+
+# In this code:
+
+# We first import the necessary libraries.
+# We then define a function load_google_sheet that takes two arguments: the URL of the Google Sheet and the path to your JSON key file.
+# We define the scope of permissions required to access the Google Sheet and Drive APIs.
+# We load the credentials from the JSON key file and authorize the client.
+# We get the instance of the Google Sheet using the URL.
+# We select the first worksheet of the Google Sheet.
+# We retrieve all the records from the worksheet.
+# We convert the list of dictionaries into a DataFrame using pd.DataFrame.
+# Finally, we return the DataFrame.
+
+def load_google_sheet(sheet_url, json_key_file=AUTH_FILE):
+    # Define the scope of permissions
+    scope = [
+        'https://spreadsheets.google.com/feeds',
+        'https://www.googleapis.com/auth/drive'
+    ]
+
+    # Load the credentials
+    creds = ServiceAccountCredentials.from_json_keyfile_name(json_key_file, scope)
+    
+    # Authorize the clientsheet 
+    client = gspread.authorize(creds)
+    
+    # Get the instance of the Spreadsheet
+    sheet = client.open_by_url(sheet_url)
+
+    # Get the first sheet of the spreadsheet
+    worksheet = sheet.worksheet('Sheet1')
+
+    # Get all the records of the data
+    data = worksheet.get_all_records()
+    
+     Convert the list of dictionaries into a DataFrame
+    df = pd.DataFrame(data)
+    
+    return df
 
 
 # ****************************************************************

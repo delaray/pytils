@@ -8,6 +8,11 @@ import json
 from datetime import datetime
 import pandas as pd
 
+# GCP Imports
+import vertexai
+from vertexai.language_models import TextGenerationModel
+
+# Project Imports
 from utils.storage import load_data, save_data
 
 # --------------------------------------------------------------------------
@@ -20,7 +25,7 @@ OPENAI_API_USER = os.getenv("OPENAI_API_USER", 'unknown')
 
 
 # **************************************************************************
-# OpenAI ChatGPT API Auth & Utils
+# OpenAI API
 # **************************************************************************
 
 # --------------------------------------------------------------------------
@@ -167,14 +172,15 @@ def parse_prompt(prompt: str, role='user'):
 # Complete Prompt
 # --------------------------------------------------------------------------
 
-def _openai_chat_complete(user, messages, model, temperature, max_tokens, storage, folder):
+def _openai_chat_complete(user, messages, model, temperature, max_tokens,
+                          storage, folder):
     try:
         completion = openai.ChatCompletion.create(model=model, messages=messages,
                                                   temperature=temperature,
                                                   max_tokens=max_tokens)
         answer = extract_answer(completion)
-        log_openai_token_usage('lmfr', user, messages, answer, storage=storage,
-                               folder=folder)
+        # log_openai_token_usage('lmfr', user, messages, answer, storage=storage,
+        #                        folder=folder)
 
         result = {'user': user, 'prompt': messages}
         result.update(answer)
@@ -182,9 +188,11 @@ def _openai_chat_complete(user, messages, model, temperature, max_tokens, storag
         return result
 
     except Exception as err:
-        print(f'\nError calling OpenAI API:\n{err}\nRetrying call to complete_prompt...\n')
+        print(f'\nError calling OpenAI API:\n{err}')
+        print(f'\nRetrying call to complete_prompt...\n')
         if err == 'The server is overloaded or not ready yet.':
-            return _openai_chat_complete(user, messages, model, temperature, max_tokens, storage, folder)
+            return _openai_chat_complete(user, messages, model, temperature,
+                                         max_tokens, storage, folder)
         else:
             return None
 
@@ -195,22 +203,27 @@ def complete_user_prompt(user, prompt, temperature=0.8, model=OPENAI_API_MODEL,
     
     messages = parse_prompt(prompt)
 
-    return _openai_chat_complete(user, messages, model, temperature, max_tokens, storage, folder)
+    return _openai_chat_complete(user, messages, model,
+                                 temperature, max_tokens, storage, folder)
 
 
-def complete_system_prompt(user, prompt, system_instruction, temperature=0.8, model=OPENAI_API_MODEL,
-                           max_tokens=1000, storage='misc', folder='tokens'):
+def complete_system_prompt(user, prompt, system_instruction, temperature=0.8,
+                           model=OPENAI_API_MODEL, max_tokens=1000,
+                           storage='misc', folder='tokens'):
     'Complete prompt using a system role with output format instructions.'
 
     messages = parse_prompt(prompt)
-    messages.extend(parse_prompt(system_instruction, role='system'))
+    messages.extend(parse_prompt(system_instruction role='system'))
 
-    return _openai_chat_complete(user, messages, model, temperature, max_tokens, storage, folder)
+    return _openai_chat_complete(user, messages, model,
+                                 temperature, max_tokens, storage, folder)
 
 
 def complete_prompt(user, prompt, temperature=0.8, model=OPENAI_API_MODEL,
                     max_tokens=1000, storage='misc', folder='tokens'):
-    return complete_use_prompt(user, prompt, temperature, model, max_tokens, storage, folder)
+    return complete_use_prompt(user, prompt, temperature=temperature,
+                               model=model, max_tokens=max_tokens,
+                               storage=storage, folder=folder)
 
 
 def test_completion(country='France', user=OPENAI_API_USER,
@@ -225,6 +238,45 @@ def test_completion(country='France', user=OPENAI_API_USER,
 # --------------------------------------------------------------------------
 
 # TODO: Make use of of OPENAI function calling facility.
+
+
+# ****************************************************************************
+# Vertex AI
+# ****************************************************************************
+
+# vertexai.init(project="opus-dev-hmbu-cdp", location="us-central1")
+
+VERTEXAI_MODEL = None
+
+def init_vertexai():
+    vertexai.init()
+    global VERTEXAI_MODEL
+    VERTEXAI_MODEL = TextGenerationModel.from_pretrained("text-bison@001")
+    return True
+
+
+# --------------------------------------------------------------------------
+
+def vertexai_user_prompt(prompt: str, temperature=0, max_tokens=1024):
+
+    model = VERTEXAI_MODEL
+
+    parameters = {"max_output_tokens": max_tokens,
+                  "temperature": temperature,
+                  "top_p": 0.8,
+                  "top_k": 40}
+
+    try:
+        response = model.predict(prompt, **parameters)
+        return response
+    
+    except Exception as err:
+        print(f'\nError calling VertexAI API:\n{err}\n')
+        return None
+
+
+# "candidate_count": 1,
+
 
 # **************************************************************************
 # End of File 

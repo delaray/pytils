@@ -19,6 +19,16 @@
 # Other Packages
 # https://pypi.org/project/doi2pdf/
 # https://pypi.org/project/dreamai-pdf/
+#
+# ********************************************************************
+#
+# Anystyle (Ruby BaseBased)
+# https://github.com/inukshuk/anystyle
+#
+# AnyStyle is a fast and smart parser of bibliographic
+# references. Originally inspired by parsCit and FreeCite, AnyStyle
+# uses machine learning algorithms and aims to make it easy to train
+# models with data that's relevant to you.
 
 # *********************************************************************
 

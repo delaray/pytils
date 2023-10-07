@@ -5,10 +5,14 @@ openpyxl
 nltk
 scikit-learn
 neo4j
+graphdatascience
+oauth2client
+gspread 
 google-cloud-bigquery
 google-cloud-storage
-matplotlib
+google-cloud-aiplatform
 pandas-gbq
+matplotlib
 openai
 gcsfs
 gsheets
