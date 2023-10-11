@@ -10,6 +10,7 @@
 
 # Python import
 import os
+import re
 
 # Data science imports
 import numpy as np
@@ -19,6 +20,8 @@ import pandas as pd
 # GCP Imports
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
 from google.cloud import bigquery
 from google.cloud import storage
 import gcsfs
@@ -901,7 +904,7 @@ AUTH_FILE = os.environ['GOOGLE_APPLICATION_CREDENTIALS']
 # We convert the list of dictionaries into a DataFrame using pd.DataFrame.
 # Finally, we return the DataFrame.
 
-def load_google_sheet(sheet_url, json_key_file=AUTH_FILE):
+def get_google_client(json_key_file=AUTH_FILE):
     # Define the scope of permissions
     scope = [
         'https://spreadsheets.google.com/feeds',
@@ -912,22 +915,112 @@ def load_google_sheet(sheet_url, json_key_file=AUTH_FILE):
     creds = ServiceAccountCredentials.from_json_keyfile_name(json_key_file, scope)
     
     # Authorize the clientsheet 
-    client = gspread.authorize(creds)
-    
+    return gspread.authorize(creds)
+
+
+# -----------------------------------------------------------
+
+def get_google_sheet(url: str, json_key_file=AUTH_FILE):
+
+    # Get an authorized client
+    client = get_google_client(json_key_file=json_key_file)
+
     # Get the instance of the Spreadsheet
-    sheet = client.open_by_url(sheet_url)
+    try:
+    # Get the instance of the Spreadsheet
+        sheet = client.open_by_url(url)
+        # Get the first sheet of the spreadsheet
+        return sheet.worksheet('Sheet1'), client
 
-    # Get the first sheet of the spreadsheet
-    worksheet = sheet.worksheet('Sheet1')
-
-    # Get all the records of the data
-    data = worksheet.get_all_records()
+    except Exception as err:
+        print(f'\nError accessing Google sheet:\n{url}')
+        return None, client
     
-     Convert the list of dictionaries into a DataFrame
-    df = pd.DataFrame(data)
-    
-    return df
 
+# -----------------------------------------------------------
+
+def load_google_sheet(sheet_url: str, json_key_file=AUTH_FILE):
+
+    # Get the instance of the Spreadsheet
+    worksheet, client = get_google_sheet(sheet_url, json_key_file=json_key_file)
+
+    if worksheet is not None:
+        # Get all the records of the data
+        data = worksheet.get_all_records()
+    
+        # Convert the list of dictionaries into a DataFrame
+        df = pd.DataFrame(data)
+        return df
+    else:
+        return None
+
+
+# -----------------------------------------------------------
+
+def save_google_sheet(df, sheet_url, json_key_file=AUTH_FILE):
+
+    # Get the instance of the Spreadsheet
+    worksheet, client = get_google_sheet(sheet_url, json_key_file=json_key_file)
+
+    # Create worksheet if needed
+    if worksheet is None:
+        worksheet =  worksheet.create(sheet_url)
+
+    # Replace contents with dataframe(sheet_url
+    worksheet.update([df.columns.values.tolist()] + df.values.tolist())
+    return True
+
+
+# ****************************************************************
+# Google Drive  
+# ****************************************************************
+
+def extract_folder_id(folder_url):
+    # Use a regular expression to extract the folder ID from the URL
+    match = re.search(r'folders/([\w-]+)', folder_url)
+    if match:
+        return match.group(1)
+    else:
+        raise ValueError("Invalid folder URL")
+
+
+def list_files_in_folder(folder_url, json_key_file=AUTH_FILE):
+
+    # Get the folder id
+    folder_id = extract_folder_id(folder_url)
+    
+    # Load the credentials
+    creds = service_account.Credentials.from_service_account_file(
+        json_key_file,
+        scopes=['https://www.googleapis.com/auth/drive']
+    )
+
+    # Build the service
+    service = build('drive', 'v3', credentials=creds)
+
+    # Call the Drive v3 API to list the files in the folder
+    results = service.files().list(
+        q=f"'{folder_id}' in parents",
+        fields="nextPageToken, files(id, name)"
+    ).execute()
+
+    # Get the list of files
+    files = results.get('files', [])
+
+    if not files:
+        print('No files found.')
+    else:
+        print('Files:')
+        for file in files:
+            print(f'{file["name"]} ({file["id"]})')
+
+    return files
+
+# Usage:
+# Replace 'your-folder-id' with the ID of your Google Drive folder
+# Replace 'your-json-key-file.json' with the path to your JSON key file
+
+# files = list_files_in_folder('your-folder-id', 'your-json-key-file.json')
 
 # ****************************************************************
 # End of File
