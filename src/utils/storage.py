@@ -11,6 +11,7 @@
 # Python import
 import os
 import re
+import io
 
 # Data science imports
 import numpy as np
@@ -22,6 +23,7 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseDownload
 from google.cloud import bigquery
 from google.cloud import storage
 import gcsfs
@@ -984,6 +986,8 @@ def extract_folder_id(folder_url):
         raise ValueError("Invalid folder URL")
 
 
+# -----------------------------------------------------------
+
 def list_files_in_folder(folder_url, json_key_file=AUTH_FILE):
 
     # Get the folder id
@@ -1021,6 +1025,43 @@ def list_files_in_folder(folder_url, json_key_file=AUTH_FILE):
 # Replace 'your-json-key-file.json' with the path to your JSON key file
 
 # files = list_files_in_folder('your-folder-id', 'your-json-key-file.json')
+
+# -----------------------------------------------------------
+
+def download_file(file_id, json_key_file, local_file_path):
+    # Load the credentials
+    creds = service_account.Credentials.from_service_account_file(
+        json_key_file,
+        scopes=['https://www.googleapis.com/auth/drive']
+    )
+
+    # Build the service
+    service = build('drive', 'v3', credentials=creds)
+
+    # Request the file metadata
+    file_metadata = service.files().get(fileId=file_id).execute()
+    file_name = file_metadata['name']
+
+    # Request the file content
+    request = service.files().get_media(fileId=file_id)
+    downloaded_io = io.BytesIO()
+    downloader = MediaIoBaseDownload(downloaded_io, request)
+    done = False
+    while done is False:
+        status, done = downloader.next_chunk()
+        print(f'Download {int(status.progress() * 100)}%.')
+
+    # Save the file to the local file system
+    with open(local_file_path, 'wb') as out_file:
+        out_file.write(downloaded_io.getvalue())
+
+    print(f'File {file_name} downloaded to {local_file_path}.')
+
+# Usage:
+# Replace 'your-file-id' with the ID of your Google Drive file
+# Replace 'your-json-key-file.json' with the path to your JSON key file
+# Replace 'your-local-file-path' with the path where you want to save the file
+# download_file('your-file-id', 'your-json-key-file.json', 'your-local-file-path')
 
 # ****************************************************************
 # End of File
