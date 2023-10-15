@@ -3,6 +3,7 @@
 # ****************************************************************
 
 import os
+import re
 import email
 import imaplib
 from email.header import decode_header
@@ -116,20 +117,60 @@ def get_emails_from_sender(sender_email, user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
 # Microsoft Exchange Server
 # ****************************************************************
 
-def get_exhange_messages(n, user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
+SENDER = "noreply@medium.com"
+
+def get_hotmail_messages(sender=SENDER, user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
+    
     email = f'{user}@hotmail.com'
 
-     credentials = Credentials(email, pwd)
+    credentials = Credentials(email, pwd)
 
-     account = Account(primary_smtp_address="delaray@hotmail.com",
-                       config=config,
-                       autodiscover=False,
-                       access_type=DELEGATE)
+    config = Configuration(server="outlook.office365.com",
+                           credentials=credentials)
 
-     messages = list(account.inbox.all()[n])
+    account = Account(primary_smtp_address="delaray@hotmail.com",
+                      config=config,
+                      autodiscover=False,
+                      access_type=DELEGATE)
 
-     return messages
-                     
+    folder = account.inbox
+    
+    items = folder.filter(sender=sender)
+     
+    messages = list(items)
+
+    return messages
+
+
+def get_message_urls(message, prefix='https://medium.com'):
+
+    # Define a regular expression pattern to match URLs
+    url1 = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]'
+    url2 = r'|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+    
+    url_pattern = re.compile(url1+url2)
+    
+    # Extract URLs from the text and HTML bodies
+    text_body_urls = url_pattern.findall(message.text_body or '')
+    html_body_urls = url_pattern.findall(message.body or '')
+    
+    # Combine and deduplicate the lists of URLs
+    urls = list(set(text_body_urls + html_body_urls))
+
+    urls = [url for url in urls if url.startswith(prefix) is True]
+
+    def shorten(url):
+        try:
+            pos = url.index('?source')
+            return url[:pos]
+        except Exception:
+            return url
+
+    urls = [shorten(url) for url in urls]
+    
+    return urls
+
+
 # ****************************************************************
 # End of File
 # ****************************************************************
