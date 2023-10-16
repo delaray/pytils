@@ -117,18 +117,16 @@ def get_emails_from_sender(sender_email, user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
 # Microsoft Exchange Server
 # ****************************************************************
 
-SENDER = "noreply@medium.com"
-
-def get_hotmail_messages(sender=SENDER, user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
+def get_hotmail_messages(sender, user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
     
-    email = f'{user}@hotmail.com'
+    user_email = f'{user}@hotmail.com'
 
-    credentials = Credentials(email, pwd)
+    credentials = Credentials(user_email, pwd)
 
     config = Configuration(server="outlook.office365.com",
                            credentials=credentials)
 
-    account = Account(primary_smtp_address="delaray@hotmail.com",
+    account = Account(primary_smtp_address=user_email,
                       config=config,
                       autodiscover=False,
                       access_type=DELEGATE)
@@ -146,7 +144,7 @@ def get_hotmail_messages(sender=SENDER, user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
 # Message URLS
 # -----------------------------------------------------------------
 
-def get_message_urls(message, prefix='https://medium.com'):
+def get_message_urls(message, prefix=''):
 
     # Define a regular expression pattern to match URLs
     url1 = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]'
@@ -216,7 +214,7 @@ def get_message_properties(message):
               'html': message.body,
               'recipients': message.to_recipients,
               'size': message.size,
-              'datetime_sent': mmessage.datetime_sent,
+              'datetime_sent': message.datetime_sent,
               'datetime_received': message.datetime_received}
 
     return result
