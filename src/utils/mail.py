@@ -210,16 +210,24 @@ def get_message_properties(message):
     result = {'id': message.id,
               'sender': message.sender,
               'subject': message.subject,
-              'text': message.text_body,
-              'html': message.body,
               'recipients': message.to_recipients,
               'size': message.size,
               'datetime_sent': message.datetime_sent,
               'datetime_received': message.datetime_received}
 
     return result
+
+
+def get_message_content(message):
+
+    # Collect essential message properties
+    result = {'id': message.id,
+              'text': message.text_body,
+              'html': message.body}
+
+    return result
     
-    
+
 # ****************************************************************
 # End of File
 # ****************************************************************
