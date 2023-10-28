@@ -1,0 +1,9 @@
+google-cloud-aiplatform
+vertexai
+
+1. Create dataset
+2. Look aty analysis results in email
+3. from vertexai.language_model import TextGenerationModel
+
+text-embedding-gecko
+arthur.messenger@gmail.com

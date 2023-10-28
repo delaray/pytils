@@ -10,7 +10,8 @@ from email.header import decode_header
 from exchangelib import Credentials, Account, Configuration, DELEGATE
 
 HOTMAIL_USER = os.environ['HOTMAIL_USER']
-HOTMAIL_PWD =  os.environ['HOTMAIL_PWD']
+HOTMAIL_PWD = os.environ['HOTMAIL_PWD']
+
 
 # ********************************************************************************
 # Part 1: Sending Mail
@@ -32,6 +33,7 @@ def send_email(receiver_email, subject, content):
     message.attach(part1)
 
     context = ssl.create_default_context()
+    
     try:
         with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
             server.login(sender_email, password)
@@ -206,17 +208,22 @@ def get_message_urls(message, prefix=''):
 
 def get_message_properties(message):
 
+    sent = message.datetime_sent
+    received = message.datetime_received
+    
     # Collect essential message properties
     result = {'id': message.id,
               'sender': message.sender,
               'subject': message.subject,
               'recipients': message.to_recipients,
               'size': message.size,
-              'datetime_sent': message.datetime_sent,
-              'datetime_received': message.datetime_received}
+              'datetime_sent': f'{received.month}-{received.day}-{received.year}'
+              'datetime_received': f'{received.month}-{received.day}-{received.year}'}
 
     return result
 
+
+# -----------------------------------------------------------------
 
 def get_message_content(message):
 
