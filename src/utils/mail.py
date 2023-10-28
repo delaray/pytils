@@ -179,7 +179,8 @@ def get_message_urls(message, prefix=''):
 # Message Properties
 # -----------------------------------------------------------------
 
-# Message object fileds and objects
+# MS Exchange Message object all fields and methods:
+
 # ['ELEMENT_NAME', 'FIELDS', 'ID_ELEMENT_CLS', 'INSERT_AFTER_FIELD', 'NAMESPACE', '___id', '__attachments', '__author', '__bcc_recipients',
 # '__body', '__categories', '__cc_recipients', '__class__', '__conversation_id', '__conversation_index', '__conversation_topic',
 # '__culture', '__datetime_created', '__datetime_received', '__datetime_sent', '__delattr__', '__dict__', '__dir__',
@@ -217,7 +218,7 @@ def get_message_properties(message):
               'subject': message.subject,
               'recipients': message.to_recipients,
               'size': message.size,
-              'datetime_sent': f'{received.month}-{received.day}-{received.year}'
+              'datetime_sent': f'{received.month}-{received.day}-{received.year}',
               'datetime_received': f'{received.month}-{received.day}-{received.year}'}
 
     return result
