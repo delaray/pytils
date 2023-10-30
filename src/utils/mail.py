@@ -123,58 +123,63 @@ def get_emails_from_sender(sender_email, user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
 # Microsoft Exchange Server
 # ****************************************************************
 
+# -----------------------------------------------------------------
+# Get  Hotmail Account
+# -----------------------------------------------------------------
+
+def get_hotmail_account(user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
+    try:
+        user_email = f'{user}@hotmail.com'
+        credentials = Credentials(user_email, pwd)
+        config = Configuration(server=HOTMAIL_SERVER, credentials=credentials)
+        account = Account(primary_smtp_address=user_email,
+                        config=config,
+                          autodiscover=False,
+                          access_type=DELEGATE)
+        return account
+    except Exception as err:
+        print(f'\nError getting Hotmail account.\n{err}\n')
+        return None
+
+# -----------------------------------------------------------------
+# Get  Hotmail Messages
+# -----------------------------------------------------------------
+
 def get_hotmail_messages(sender_email, user=HOTMAIL_USER, pwd=HOTMAIL_PWD,
                          server=HOTMAIL_SERVER):
     
-    user_email = f'{user}@hotmail.com'
-    credentials = Credentials(user_email, pwd)
+    account = get_hotmail_account(user=user, pwd=pwd)
 
-    config = Configuration(server=HOTMAIL_SERVER, credentials=credentials)
-
-    account = Account(primary_smtp_address=user_email,
-                      config=config,
-                      autodiscover=False,
-                      access_type=DELEGATE)
-
-    folder = account.inbox
-    
-    items = folder.filter(sender=sender_email)
-     
-    messages = list(items)
-
-    return messages
+    if account is not None:
+        folder = account.inbox
+        items = folder.filter(sender=sender_email)
+        messages = list(items)
+        return messages
+    else:
+        return None
 
 
 # -----------------------------------------------------------------
 # Move Hotmail message
 # -----------------------------------------------------------------
 
-def processed_mailbox(account):
+def get_processed_mail_folder(account):
     return account.root/'Top of Information Store'/'Aiscape'/'Processed'
 
 
 def move_hotmail_message(message, to_folder=None, user=HOTMAIL_USER,
                          pwd=HOTMAIL_PWD,):
 
-    user_email = f'{user}@hotmail.com'
-    credentials = Credentials(user_email, pwd)
-    config = Configuration(server=HOTMAIL_SERVER, credentials=credentials)
-
-    account = Account(primary_smtp_address=user_email,
-                      config=config,
-                      autodiscover=False,
-                      access_type=DELEGATE)
-
-    #if folder is outside of inbox
-    if to_folder is None:
-        to_folder = account.root/'Top of Information Store'/'Aiscape'/'Processed'
-
     try:
+        account = get_hotmail_account(user=user, pwd=pwd)
+        if to_folder is None:
+            to_folder = get_processed_mail_folder(account)
         message.move(to_folder)
-        print(f'\nSucces: Message moved to Aiscape/Processed')
+        # print(f'\nSucces: Message moved to Aiscape/Processed')
         return True
+    
     except Exception as err:
-        print(f'\nError: Message NOT moved to Aiscape/Processed\n{err}\n')
+        # print(f'\nError: Message NOT moved to Aiscape/Processed\n{err}\n')
         return False
         
 
