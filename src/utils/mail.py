@@ -11,6 +11,10 @@ from exchangelib import Credentials, Account, Configuration, DELEGATE
 
 HOTMAIL_USER = os.environ['HOTMAIL_USER']
 HOTMAIL_PWD = os.environ['HOTMAIL_PWD']
+HOTMAIL_SERVER = "outlook.office365.com"
+
+# -----------------------------------------------------------------
+
 
 
 # ********************************************************************************
@@ -119,14 +123,13 @@ def get_emails_from_sender(sender_email, user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
 # Microsoft Exchange Server
 # ****************************************************************
 
-def get_hotmail_messages(sender, user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
+def get_hotmail_messages(sender_email, user=HOTMAIL_USER, pwd=HOTMAIL_PWD,
+                         server=HOTMAIL_SERVER):
     
     user_email = f'{user}@hotmail.com'
-
     credentials = Credentials(user_email, pwd)
 
-    config = Configuration(server="outlook.office365.com",
-                           credentials=credentials)
+    config = Configuration(server=HOTMAIL_SERVER, credentials=credentials)
 
     account = Account(primary_smtp_address=user_email,
                       config=config,
@@ -135,7 +138,7 @@ def get_hotmail_messages(sender, user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
 
     folder = account.inbox
     
-    items = folder.filter(sender=sender)
+    items = folder.filter(sender=sender_email)
      
     messages = list(items)
 
@@ -143,8 +146,70 @@ def get_hotmail_messages(sender, user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
 
 
 # -----------------------------------------------------------------
+# Move Hotmail message
+# -----------------------------------------------------------------
+
+def processed_mailbox(account):
+    return account.root/'Top of Information Store'/'Aiscape'/'Processed'
+
+
+def move_hotmail_message(message, to_folder=None, user=HOTMAIL_USER,
+                         pwd=HOTMAIL_PWD,):
+
+    user_email = f'{user}@hotmail.com'
+    credentials = Credentials(user_email, pwd)
+    config = Configuration(server=HOTMAIL_SERVER, credentials=credentials)
+
+    account = Account(primary_smtp_address=user_email,
+                      config=config,
+                      autodiscover=False,
+                      access_type=DELEGATE)
+
+    #if folder is outside of inbox
+    if to_folder is None:
+        to_folder = account.root/'Top of Information Store'/'Aiscape'/'Processed'
+
+    try:
+        message.move(to_folder)
+        print(f'\nSucces: Message moved to Aiscape/Processed')
+        return True
+    except Exception as err:
+        print(f'\nError: Message NOT moved to Aiscape/Processed\n{err}\n')
+        return False
+        
+
+# General Move Mail Message
+#
+# from exchangelib import Credentials, Account
+# import os
+
+# credentials = Credentials('test.name@mail.com', 'password')
+# account = Account('test.name@mail.com', credentials=credentials, 
+# autodiscover=True)
+
+# #this will show you the account folder tree
+# print(account.root.tree())
+
+# #if to_folder is a sub folder of inbox
+# to_folder = account.inbox / 'sub_folder_name'
+
+#  #if folder is outside of inbox
+#  to_folder = account.root / 'folder_name'
+
+# for item in account.inbox.all().order_by('-datetime_received')[:1]:
+#     for attachment in item.attachments:
+#         fpath = os.path.join("C:/destination/path", attachment.name)
+#         with open(fpath, 'wb') as f:
+#             f.write(attachment.content)
+#     item.move(to_folder)
+
+# -----------------------------------------------------------------
 # Message URLS
 # -----------------------------------------------------------------
+
+def processed_mailbox(account):
+    return account.root/'Top of Information Store'/'Machine Learning'/'Aiscape'/'Processed'
+
 
 def get_message_urls(message, prefix=''):
 
@@ -235,7 +300,7 @@ def get_message_content(message):
 
     return result
     
-
+    
 # ****************************************************************
 # End of File
 # ****************************************************************
