@@ -126,12 +126,12 @@ def run_pdbq(query, project_id=PROJECT_ID):
 # Part 5: GCP
 # ****************************************************************
 
-BQ_DATASET_NAME = 'hmbu_opus_knowledge_graph'
+BQ_DATASET_NAME = GCP_DATASET
 
 # ----------------------------------------------------------------
 
 def bq_project_name(env='dev'):
-    return f'opus-{env}-hmbu-cdp'
+    return PROJECT_ID
 
 
 # ----------------------------------------------------------------
@@ -183,7 +183,7 @@ def run_bq_query(query, client=None):
 # --------------------------------------------------------------
 
 def delete_bq_table(table_name, project_id=PROJECT_ID, env='dev', client=None):
-    'Deletes the specified table in specified Opus hmbu environment.'
+    'Deletes the specified table.'
 
     # Construct a BigQuery client object unless provide
     if client is None:
@@ -329,11 +329,11 @@ def model_pathname(name, filename):
 
 # -----------------------------------------------------------
 
-def data_directory(model_name, folder='data'):
+def data_directory(model_name, folder=None):
     return data_directory_fs(model_name, target=folder)
 
 
-def data_pathname(model_name, filename, folder='data'):
+def data_pathname(model_name, filename, folder=None):
     "Returns a pathaname to the data directory."
     return os.path.join(data_directory(model_name, folder=folder), filename)
 
@@ -392,9 +392,11 @@ def target_directory_gs(model_name, target=None, bucket=GCP_BUCKET,
     'Return the google storage blob of a data.'
 
     if target is None:
-        return f'{storage}/{model_name}'
+        # return f'{storage}/{model_name}'
+        return f'{storage}/'
     else:
-        return f'{storage}/{model_name}/{target}/'
+        # return f'{storage}/{model_name}/{target}/'
+        return f'{storage}/{target}/'
 
 
 # -----------------------------------------------------------
@@ -408,7 +410,7 @@ def model_directory_gs(model_name, bucket=GCP_BUCKET,
 
 
 def data_directory_gs(model_name, bucket=GCP_BUCKET,
-                      storage=GCP_STORAGE, folder='data'):
+                      storage=GCP_STORAGE, folder=None):
     'Return the google storage data path of a data.'
     
     return target_directory_gs(model_name, target=folder,
@@ -444,7 +446,7 @@ def ensure_model_directory_gs(name, bucket=GCP_BUCKET,
 
 # NB: Nature should be one of data, models or results.
 
-def data_pathname_gs(name, filename, nature, folder='data'):
+def data_pathname_gs(name, filename, nature, folder=None):
     'Return a pathname to the location of filename.'
 
     directory = data_directory_gs(name, folder=folder)
@@ -454,7 +456,7 @@ def data_pathname_gs(name, filename, nature, folder='data'):
 def data_blobs(name, bucket=GCP_BUCKET, storage=GCP_STORAGE):
     'Return the list of blobs that comprise the named data.'
 
-    blob_path = model_directory_gs(name, bucket=bucket, storage=storage)
+    blob_path = target_directory_gs(name, bucket=bucket, storage=storage)
     blobs = list(blobs_in_bucket(prefix=blob_path, bucket=bucket))
     if len(blobs) > 0:
         return blobs[1:]
@@ -483,9 +485,10 @@ def download_blob(blob_pathname, file_name, model_name, folder = 'data'):
 
 
 def download_data_blob(model_name, file_pathname, storage=GCP_STORAGE,
-                       bucket=GCP_BUCKET, folder='data'):
+                       bucket=GCP_BUCKET, folder=None):
     'Downloads a data blob from the named model.'
 
+    print(f'\nBucket: {bucket}\nStorage: {storage}\nFolder: {folder}\n)')
     blob_path = data_directory_gs(model_name, bucket=bucket, storage=storage,
                                   folder=folder)
 
@@ -532,7 +535,7 @@ def upload_blob(blob_pathname, file_pathname, bucket=GCP_BUCKET):
 
 
 def upload_data_blob(name, file_pathname, bucket=GCP_BUCKET,
-                     storage=GCP_STORAGE, folder='data'):
+                     storage=GCP_STORAGE, folder=None):
     'Upload a data blob from the named data.'
 
     blob_path = data_directory_gs(name, bucket=bucket, storage=storage,
@@ -582,7 +585,7 @@ def data_type_pathname(model_name, data_name, data_type, folder=None):
 
 # -----------------------------------------------------------
 
-def save_data_fs(model_name, data_name, data_type, data, folder='data'):
+def save_data_fs(model_name, data_name, data_type, data, folder=None):
     'Saves data to local filesystem.'
     
     pathname = data_type_pathname(model_name, data_name, data_type,
@@ -609,7 +612,7 @@ def save_data_fs(model_name, data_name, data_type, data, folder='data'):
 # -----------------------------------------------------------
 
 def save_data_gs(model_name, data_name, data_type, tdf, bucket=GCP_BUCKET,
-                 storage=GCP_STORAGE, folder='data'):
+                 storage=GCP_STORAGE, folder=None):
     'Saves data to Google Storage.'
 
     # First save to local filesystem
@@ -641,7 +644,7 @@ def save_data_bq(model_name, data_name, tdf, project, dataset):
 def save_data(model_name, data_name, data_type, tdf, destination,
               project=PROJECT_ID, dataset=GCP_DATASET,
               bucket=GCP_BUCKET, storage=GCP_STORAGE,
-              folder='data'):
+              folder=None):
     'Saves data to either local filesystem, Google Storage or Google BQ.'
 
     ensure_model_directory_fs(model_name, folder=folder)
@@ -664,7 +667,7 @@ def save_data(model_name, data_name, data_type, tdf, destination,
 # Load Data
 # -----------------------------------------------------------
 
-def load_data_fs(model_name, data_name, data_type, folder='data'):
+def load_data_fs(model_name, data_name, data_type, folder=None):
     'Loads data from local filesystem.'
 
     pathname = data_type_pathname(model_name, data_name, data_type, folder=folder)
@@ -686,7 +689,7 @@ def load_data_fs(model_name, data_name, data_type, folder='data'):
 # -----------------------------------------------------------
 
 def load_data_gs(model_name, data_name, data_type, bucket=GCP_BUCKET,
-                 storage=GCP_STORAGE, folder='data'):
+                 storage=GCP_STORAGE, folder=None):
     'Loads data from Google Storage.'
 
     filename = f'{model_name}-{data_name}.{data_type}'
@@ -724,7 +727,7 @@ def load_data_bq(model_name, data_name, project, dataset):
 def load_data(model_name, data_name, data_type, source,
               project=PROJECT_ID, dataset=GCP_DATASET,
               bucket=GCP_BUCKET, storage=GCP_STORAGE,
-              folder='data'):
+              folder=None):
     'Loads data from either local filesystem, Google Storage or Google BQ.'
 
     ensure_model_directory_fs(model_name, folder=folder)
@@ -892,19 +895,20 @@ def load_results(model_name, results_name, data_type, source,
 # Google Sheets 
 # ****************************************************************
 
-AUTH_FILE = os.environ['GOOGLE_APPLICATION_CREDENTIALS']
+AUTH_FILE = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS', None)
 
 # In this code:
 
-# We first import the necessary libraries.
-# We then define a function load_google_sheet that takes two arguments: the URL of the Google Sheet and the path to your JSON key file.
-# We define the scope of permissions required to access the Google Sheet and Drive APIs.
-# We load the credentials from the JSON key file and authorize the client.
-# We get the instance of the Google Sheet using the URL.
-# We select the first worksheet of the Google Sheet.
-# We retrieve all the records from the worksheet.
-# We convert the list of dictionaries into a DataFrame using pd.DataFrame.
-# Finally, we return the DataFrame.
+# We first import the necessary libraries.  We then define a function
+# load_google_sheet that takes two arguments: the URL of the Google
+# Sheet and the path to your JSON key file.  We define the scope of
+# permissions required to access the Google Sheet and Drive APIs.  We
+# load the credentials from the JSON key file and authorize the
+# client.  We get the instance of the Google Sheet using the URL.  We
+# select the first worksheet of the Google Sheet.  We retrieve all the
+# records from the worksheet.  We convert the list of dictionaries
+# into a DataFrame using pd.DataFrame.  Finally, we return the
+# DataFrame.
 
 def get_google_client(json_key_file=AUTH_FILE):
     # Define the scope of permissions
