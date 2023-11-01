@@ -208,13 +208,10 @@ def move_hotmail_message(message, to_folder=None, user=HOTMAIL_USER,
 #             f.write(attachment.content)
 #     item.move(to_folder)
 
+
 # -----------------------------------------------------------------
 # Message URLS
 # -----------------------------------------------------------------
-
-def processed_mailbox(account):
-    return account.root/'Top of Information Store'/'Machine Learning'/'Aiscape'/'Processed'
-
 
 def get_message_urls(message, prefix=''):
 

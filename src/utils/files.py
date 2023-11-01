@@ -1,5 +1,5 @@
 # ****************************************************************
-# KGML Utility Functions
+# Utility Functions
 # ****************************************************************
 #
 # NB: The functions in this module are potentially used by other

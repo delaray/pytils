@@ -1,5 +1,5 @@
 # *********************************************************************
-# KGML Miscellaneous Utilities
+# Miscellaneous Utilities
 # *********************************************************************
 
 # Standard Python imports

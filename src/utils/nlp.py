@@ -1,5 +1,5 @@
 # ****************************************************************
-# KGML NLP Functions
+# NLP Functions
 # ****************************************************************
 #
 # NB: The functions in this module are potentially used by other

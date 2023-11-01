@@ -1,5 +1,5 @@
 # ****************************************************************
-# KGML Google BigQuery, Google Storage, Data Persistence API
+# Google BigQuery, Google Storage, Data Persistence API
 # ****************************************************************
 #
 # Part 1: Google BigQuery & Pandas GBQ
@@ -42,12 +42,12 @@ logger = logging.getLogger()
 # ****************************************************************
 
 # GCP KGUTILS Google BQ Defaults
-PROJECT_ID = 'opus-dev-hmbu-cdp'
-PROJECT_DATASET = 'hmbu_opus_knowledge_graph'
+PROJECT_ID =os.environ.get('GCP_PROJECT_ID', 'babar-297510')
 
-# GCP KGUTILS Google Storage Defaults
-KGML_BUCKET = 'ccdp-kgml-hmbu-dev'
-KGML_STORAGE = 'orphans'
+# GCP Default values
+GCP_BUCKET = 'babar'
+GCP_STORAGE = 'aiscape'
+GCP_DATASET = 'aiscape'
 
 # Local FileSystem Data Directory 
 DATA_DIR = os.environ['DATA_DIR']
@@ -249,7 +249,7 @@ def table_to_bq(df, project=PROJECT_ID, dataset='', table_name=''):
 # Read & Write Buckets
 # --------------------------------------------------------------
 
-def blobs_in_bucket(bucket=KGML_BUCKET, prefix=""):
+def blobs_in_bucket(bucket=GCP_BUCKET, prefix=""):
     client = storage.Client(project=PROJECT_ID)
     bucket = client.bucket(bucket)
     blobs = client.list_blobs(bucket, prefix=prefix)
@@ -261,7 +261,7 @@ def blob_name(blob):
     return blob.name.split('/')[-1]
 
 
-def named_blobs(blob_pathname, bucket=KGML_BUCKET):
+def named_blobs(blob_pathname, bucket=GCP_BUCKET):
     'Returns the blob object corresponding to pathname.'
     blobs = list(blobs_in_bucket(prefix=blob_pathname, bucket=bucket))
     if len(blobs) > 0:
@@ -279,7 +279,7 @@ def blob_exists(name):
         return False
 
 
-def create_blob(name, bucket=KGML_BUCKET):
+def create_blob(name, bucket=GCP_BUCKET):
     'Create a new google storgae blob directory.'
 
     client = storage.Client(project=PROJECT_ID)
@@ -387,8 +387,8 @@ def data_pathname_fs(name, filename, nature):
 # data Google Storage
 # -----------------------------------------------------------
 
-def target_directory_gs(model_name, target=None, bucket=KGML_BUCKET,
-                        storage=KGML_STORAGE):
+def target_directory_gs(model_name, target=None, bucket=GCP_BUCKET,
+                        storage=GCP_STORAGE):
     'Return the google storage blob of a data.'
 
     if target is None:
@@ -399,24 +399,24 @@ def target_directory_gs(model_name, target=None, bucket=KGML_BUCKET,
 
 # -----------------------------------------------------------
 
-def model_directory_gs(model_name, bucket=KGML_BUCKET,
-                       storage=KGML_STORAGE):
+def model_directory_gs(model_name, bucket=GCP_BUCKET,
+                       storage=GCP_STORAGE):
     'Return the google storage model path of a data.'
     
     return target_directory_gs(model_name, target='model',
                                bucket=bucket, storage=storage)
 
 
-def data_directory_gs(model_name, bucket=KGML_BUCKET,
-                      storage=KGML_STORAGE, folder='data'):
+def data_directory_gs(model_name, bucket=GCP_BUCKET,
+                      storage=GCP_STORAGE, folder='data'):
     'Return the google storage data path of a data.'
     
     return target_directory_gs(model_name, target=folder,
                                bucket=bucket, storage=storage)
 
 
-def results_directory_gs(model_name, bucket=KGML_BUCKET,
-                         storage=KGML_STORAGE):
+def results_directory_gs(model_name, bucket=GCP_BUCKET,
+                         storage=GCP_STORAGE):
     'Return the google storage results path of a data.'
     
     return target_directory_gs(model_name, target='results',
@@ -425,16 +425,16 @@ def results_directory_gs(model_name, bucket=KGML_BUCKET,
 
 # -----------------------------------------------------------
 
-def ensure_model_directory_gs(name, bucket=KGML_BUCKET,
-                              storage=KGML_STORAGE):
+def ensure_model_directory_gs(name, bucket=GCP_BUCKET,
+                              storage=GCP_STORAGE):
     'Create data blob if it does not exist.'
 
     blob_path = data_directory_gs(name, bucket=bucket, storage=storage) + '/'
     if blob_exists(blob_path) is False:
-        create_blob(blob_path + '/', bucket=KGML_BUCKET)
-        create_blob(blob_path + 'data/', bucket=KGML_BUCKET)
-        create_blob(blob_path + 'model/', bucket=KGML_BUCKET)
-        create_blob(blob_path + 'results/', bucket=KGML_BUCKET)
+        create_blob(blob_path + '/', bucket=GCP_BUCKET)
+        create_blob(blob_path + 'data/', bucket=GCP_BUCKET)
+        create_blob(blob_path + 'model/', bucket=GCP_BUCKET)
+        create_blob(blob_path + 'results/', bucket=GCP_BUCKET)
         return True
     else:
         return False
@@ -451,7 +451,7 @@ def data_pathname_gs(name, filename, nature, folder='data'):
     return f'{directory}/{nature}/{filename}'
 
 
-def data_blobs(name, bucket=KGML_BUCKET, storage=KGML_STORAGE):
+def data_blobs(name, bucket=GCP_BUCKET, storage=GCP_STORAGE):
     'Return the list of blobs that comprise the named data.'
 
     blob_path = model_directory_gs(name, bucket=bucket, storage=storage)
@@ -482,8 +482,8 @@ def download_blob(blob_pathname, file_name, model_name, folder = 'data'):
             return True
 
 
-def download_data_blob(model_name, file_pathname, storage=KGML_STORAGE,
-                       bucket=KGML_BUCKET, folder='data'):
+def download_data_blob(model_name, file_pathname, storage=GCP_STORAGE,
+                       bucket=GCP_BUCKET, folder='data'):
     'Downloads a data blob from the named model.'
 
     blob_path = data_directory_gs(model_name, bucket=bucket, storage=storage,
@@ -495,7 +495,7 @@ def download_data_blob(model_name, file_pathname, storage=KGML_STORAGE,
     download_blob(blob_pathname, file_pathname, model_name, folder=folder)
 
 
-def download_data_blobs(model_name, bucket=KGML_BUCKET, folder=None):
+def download_data_blobs(model_name, bucket=GCP_BUCKET, folder=None):
     'Downloads all data blobs for the named data.'
 
     # Ensure the local directory exists
@@ -513,7 +513,7 @@ def download_data_blobs(model_name, bucket=KGML_BUCKET, folder=None):
     return True
 
 
-def download_results_blob(model_name, filename, storage=KGML_STORAGE, bucket=KGML_BUCKET):
+def download_results_blob(model_name, filename, storage=GCP_STORAGE, bucket=GCP_BUCKET):
     'Downloads a results blob from the named model.'
 
     blob_path = results_directory_gs(model_name, bucket=bucket, storage=storage)
@@ -524,15 +524,15 @@ def download_results_blob(model_name, filename, storage=KGML_STORAGE, bucket=KGM
 # Uploading Blobs
 # -----------------------------------------------------------
 
-def upload_blob(blob_pathname, file_pathname, bucket=KGML_BUCKET):
+def upload_blob(blob_pathname, file_pathname, bucket=GCP_BUCKET):
     'Upload a blob to Google Storage.'
 
     blob = create_blob(blob_pathname, bucket=bucket)
     blob.upload_from_filename(file_pathname)
 
 
-def upload_data_blob(name, file_pathname, bucket=KGML_BUCKET,
-                     storage=KGML_STORAGE, folder='data'):
+def upload_data_blob(name, file_pathname, bucket=GCP_BUCKET,
+                     storage=GCP_STORAGE, folder='data'):
     'Upload a data blob from the named data.'
 
     blob_path = data_directory_gs(name, bucket=bucket, storage=storage,
@@ -544,7 +544,7 @@ def upload_data_blob(name, file_pathname, bucket=KGML_BUCKET,
     upload_blob(blob_pathname, file_pathname)
 
 
-def upload_data_blobs(name, bucket=KGML_BUCKET, storage=KGML_STORAGE,
+def upload_data_blobs(name, bucket=GCP_BUCKET, storage=GCP_STORAGE,
                       folder=None):
     'Upload all data blobs for the named data.'
 
@@ -558,8 +558,8 @@ def upload_data_blobs(name, bucket=KGML_BUCKET, storage=KGML_STORAGE,
     return True
 
 
-def upload_results_blob(name, file_pathname, bucket=KGML_BUCKET,
-                        storage=KGML_STORAGE, folder='results'):
+def upload_results_blob(name, file_pathname, bucket=GCP_BUCKET,
+                        storage=GCP_STORAGE, folder='results'):
     'Upload a data blob from the named data.'
 
     blob_path = data_directory_gs(name, bucket=bucket, storage=storage, folder=folder)
@@ -608,8 +608,8 @@ def save_data_fs(model_name, data_name, data_type, data, folder='data'):
 
 # -----------------------------------------------------------
 
-def save_data_gs(model_name, data_name, data_type, tdf, bucket=KGML_BUCKET,
-                 storage=KGML_STORAGE, folder='data'):
+def save_data_gs(model_name, data_name, data_type, tdf, bucket=GCP_BUCKET,
+                 storage=GCP_STORAGE, folder='data'):
     'Saves data to Google Storage.'
 
     # First save to local filesystem
@@ -639,8 +639,8 @@ def save_data_bq(model_name, data_name, tdf, project, dataset):
 # ----------------------------------------------------------
 
 def save_data(model_name, data_name, data_type, tdf, destination,
-              project=PROJECT_ID, dataset=PROJECT_DATASET,
-              bucket=KGML_BUCKET, storage=KGML_STORAGE,
+              project=PROJECT_ID, dataset=GCP_DATASET,
+              bucket=GCP_BUCKET, storage=GCP_STORAGE,
               folder='data'):
     'Saves data to either local filesystem, Google Storage or Google BQ.'
 
@@ -685,8 +685,8 @@ def load_data_fs(model_name, data_name, data_type, folder='data'):
 
 # -----------------------------------------------------------
 
-def load_data_gs(model_name, data_name, data_type, bucket=KGML_BUCKET,
-                 storage=KGML_STORAGE, folder='data'):
+def load_data_gs(model_name, data_name, data_type, bucket=GCP_BUCKET,
+                 storage=GCP_STORAGE, folder='data'):
     'Loads data from Google Storage.'
 
     filename = f'{model_name}-{data_name}.{data_type}'
@@ -722,8 +722,8 @@ def load_data_bq(model_name, data_name, project, dataset):
 # -----------------------------------------------------------
 
 def load_data(model_name, data_name, data_type, source,
-              project=PROJECT_ID, dataset=PROJECT_DATASET,
-              bucket=KGML_BUCKET, storage=KGML_STORAGE,
+              project=PROJECT_ID, dataset=GCP_DATASET,
+              bucket=GCP_BUCKET, storage=GCP_STORAGE,
               folder='data'):
     'Loads data from either local filesystem, Google Storage or Google BQ.'
 
@@ -769,7 +769,7 @@ def save_results_fs(model_name, results_name, data_type, results):
 
 
 def save_results_gs(model_name, results_name, data_type, results,
-                    bucket=KGML_BUCKET, storage=KGML_STORAGE):
+                    bucket=GCP_BUCKET, storage=GCP_STORAGE):
     'Saves data to Google Storage.'
 
     # First save to local filesystem
@@ -785,7 +785,7 @@ def save_results_gs(model_name, results_name, data_type, results,
 # ----------------------------------------------------------
 
 def save_results_bq(model_name, results_name, results,
-                    project=PROJECT_ID, dataset=PROJECT_DATASET):
+                    project=PROJECT_ID, dataset=GCP_DATASET):
     'Saves data to Google Big Query.'
 
     if project is not None and dataset is not None:
@@ -798,8 +798,8 @@ def save_results_bq(model_name, results_name, results,
 # ----------------------------------------------------------
 
 def save_results(model_name, results_name, data_type, results, destination,
-                 project=PROJECT_ID, dataset=PROJECT_DATASET,
-                 bucket=KGML_BUCKET, storage=KGML_STORAGE,
+                 project=PROJECT_ID, dataset=GCP_DATASET,
+                 bucket=GCP_BUCKET, storage=GCP_STORAGE,
                  folder='results'):
     'Saves results to local filesystem or to Google Storage.'
 
@@ -866,8 +866,8 @@ def load_results_gs(model_name, results_name, data_type):
 # -----------------------------------------------------------
 
 def load_results(model_name, results_name, data_type, source,
-                 project=PROJECT_ID, dataset=PROJECT_DATASET,
-                 bucket=KGML_BUCKET, storage=KGML_STORAGE,
+                 project=PROJECT_ID, dataset=GCP_DATASET,
+                 bucket=GCP_BUCKET, storage=GCP_STORAGE,
                  folder='results'):
     'Loads data from either filesystem or Google Storage.'
 

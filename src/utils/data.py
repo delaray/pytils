@@ -1,6 +1,5 @@
-
 # *******************************************************************
-# KGML Data Manipulation Functions.
+# Data Manipulation Functions.
 # *******************************************************************
 
 # Data science imports
