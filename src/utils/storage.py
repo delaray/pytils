@@ -194,7 +194,7 @@ def delete_bq_table(table_name, project_id=PROJECT_ID,
     if client is None:
         client = bigquery.Client(project=PROJECT_ID)
 
-    table_path = table_id(project_id, dataset_id, table_name)
+    table_path = table_id(project_id, dataset_id, table_name)[1:-1]
 
     # Delete the table if it exists.
     try:
