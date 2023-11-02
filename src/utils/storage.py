@@ -71,10 +71,6 @@ def run_pdbq(query, project_id=PROJECT_ID):
 # Part 2: Google BigQuery
 # ****************************************************************
 
-# def bq_table_id(project, dataset, table_name):
-#     return f'`{project}.{dataset}.{table_name}`'
-
-
 # # --------------------------------------------------------------
 # # Run BQ Query
 # # --------------------------------------------------------------
@@ -126,7 +122,7 @@ def run_pdbq(query, project_id=PROJECT_ID):
 # Part 5: GCP
 # ****************************************************************
 
-BQ_DATASET_NAME = GCP_DATASET
+DATASET_ID = GCP_DATASET
 
 # ----------------------------------------------------------------
 
@@ -136,12 +132,19 @@ def bq_project_name(env='dev'):
 
 # ----------------------------------------------------------------
 
-def bq_table_id(table_name, env='dev'):
-    project_name = bq_project_name(env)
-    table_id = f'`{project_name}.{BQ_DATASET_NAME}.{table_name}`'
-    # table_id = f'{project_name}.{BQ_DATASET_NAME}.{table_name}'
-    logger.warning(f'\nTable_id: {table_id}\n')
-    return table_id
+
+def table_id(project, dataset, table_name):
+    table_path = f'`{project}.{dataset}.{table_name}`'
+    logger.warning(f'\nTable_id: {table_path}\n')
+    return table_path
+
+
+# def table_id(table_name, project_id=PROJECT_ID,dataset_id=DATASET_ID):
+#     project_name = bq_project_name(env)
+#     table_id = f'`{project_id}.{dataset_id}.{table_name}`'
+#     # table_id = f'{project_name}.{BQ_DATASET_NAME}.{table_name}'
+#     logger.warning(f'\nTable_id: {table_id}\n')
+#     return table_id
 
 
 # --------------------------------------------------------------
@@ -157,12 +160,13 @@ def run_pdbq(query, project_id=PROJECT_ID):
 
 # --------------------------------------------------------------
 
-def create_bq_table(table_name, df, project_id=PROJECT_ID, env='dev'):
-    # table_id = bq_table_id(table_name, env=env)
-    project_name = bq_project_name(env)
-    table_id = f'{project_name}.{BQ_DATASET_NAME}.{table_name}'
-    pandas_gbq.to_gbq(df, table_id, project_id=project_id)
-    return True
+# def create_bq_table(table_name, df, project_id=PROJECT_ID,
+#                     dataset_id=DATASET_ID):
+#     # table_id = bq_table_id(project_id, table_name, env=env)
+#     project_name = bq_project_name(env)
+#     table_path = table_id(project_id, dataset_id, table_name)
+#     pandas_gbq.to_gbq(df, table_path, project_id=project_id)
+#     return True
 
 
 # --------------------------------------------------------------
@@ -182,19 +186,20 @@ def run_bq_query(query, client=None):
 
 # --------------------------------------------------------------
 
-def delete_bq_table(table_name, project_id=PROJECT_ID, env='dev', client=None):
+def delete_bq_table(table_name, project_id=PROJECT_ID,
+                    dataset_id=DATASET_ID, client=None):
     'Deletes the specified table.'
 
     # Construct a BigQuery client object unless provide
     if client is None:
         client = bigquery.Client(project=PROJECT_ID)
 
-    table_id = bq_table_id(table_name, env=env)[1:-1]
+    table_path = table_id(project_id, dataset_id, table_name)
 
     # Delete the table if it exists.
     try:
-        client.delete_table(table_id, not_found_ok=True)
-        logger.warning("Deleted table '{}'.".format(table_id))
+        client.delete_table(table_path, not_found_ok=True)
+        logger.warning("Deleted table '{}'.".format(table_path))
         return True
     except Exception as e:
         logger.error(f'Error deleting table:\n{e}')
@@ -202,7 +207,7 @@ def delete_bq_table(table_name, project_id=PROJECT_ID, env='dev', client=None):
 
 
 # --------------------------------------------------------------
-# Create BQ Table
+# Ensure BQ Column Type Values
 # --------------------------------------------------------------
 
 def ensure_bq_column_type_values(df):
@@ -712,8 +717,9 @@ def load_data_bq(model_name, data_name, project, dataset):
 
     if project is not None and dataset is not None:
         table_name = f'{model_name}-{data_name}'
-        table_id = bq_table_id(table_name)
-        # print(f'\nBQ Table ID: {table_id}')
+        table_id = table_id(table_name, project_id=project_id,
+                            dataset_id=dataset_id)
+        print(f'\nBQ Table ID: {table_id}')
         query = f"SELECT * FROM {table_id}"
         df = run_pdbq(query)
         return df
