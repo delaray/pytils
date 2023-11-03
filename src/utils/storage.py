@@ -663,9 +663,10 @@ def load_data_bq(model_name, data_name, project, dataset):
     'Loads data from Google BQ.'
 
     if project is not None and dataset is not None:
-        table_id = get_qualified_table_id(project, dataset, data_name)
-        print(f'\nBQ Table ID: {table_id}')
-        query = f"SELECT * FROM {table_id}"
+        # table_id = get_qualified_table_id(project, dataset, data_name)
+        table_name = f'{model_name}-{data_name}'
+        print(f'\nBQ Table ID: {table_name}')
+        query = f"SELECT * FROM {table_name}"
         df = run_pdbq(query)
         return df
     else:
