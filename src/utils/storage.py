@@ -71,53 +71,6 @@ def run_pdbq(query, project_id=PROJECT_ID):
 # Part 2: Google BigQuery
 # ****************************************************************
 
-# # --------------------------------------------------------------
-# # Run BQ Query
-# # --------------------------------------------------------------
-
-# def run_bq_query(query, client=None):
-#     'Runs a qury on Google Big Query and returns the results.'
-
-#     client = bigquery.Client(project=PROJECT_ID) if client is None else client
-#     query_job = client.query(query)
-
-#     # Waits for job to complete.
-#     results = query_job.result()
-#     return results
-
-
-# # --------------------------------------------------------------
-# # Create BQ Table 
-# # --------------------------------------------------------------
-
-# def create_bq_table(project, dataset, table_name, df):
-#     table_id = bq_table_id(project, dataset, table_name)
-#     pandas_gbq.to_gbq(df, table_id, project_id=project)
-#     return True
-
-
-# # --------------------------------------------------------------
-# # Delete BQ Table
-# # --------------------------------------------------------------
-
-# def delete_bq_table(project, dataset, table_name, client=None):
-#     'Deletes the specified table in specified Opus hmbu environment.'
-
-#     # Construct a BigQuery client object unless provide
-#     if client is None:
-#         client = bigquery.Client(project=project)
-
-#     table_id = bq_table_id(project, dataset, table_name)
-
-#     # Delete the table if it exists.
-#     try:
-#         client.delete_table(table_id, not_found_ok=True)
-#         print("Deleted table '{}'.".format(table_id))
-#         return True
-#     except Exception as e:
-#         print(f'Error deleting table:\n{e}')
-#         return False
-
 # ****************************************************************
 # Part 5: GCP
 # ****************************************************************
@@ -125,7 +78,7 @@ def run_pdbq(query, project_id=PROJECT_ID):
 DATASET_ID = GCP_DATASET
 
 
-def table_id(project, dataset, table_name):
+def get_qualified_table_id(project, dataset, table_name):
     table_path = f'`{project}.{dataset}.{table_name}`'
     logger.warning(f'\nTable_id: {table_path}\n')
     return table_path
@@ -156,17 +109,6 @@ def run_pdbq(query, project_id=PROJECT_ID):
 
 
 # --------------------------------------------------------------
-
-# def create_bq_table(table_name, df, project_id=PROJECT_ID,
-#                     dataset_id=DATASET_ID):
-#     # table_id = bq_table_id(project_id, table_name, env=env)
-#     project_name = bq_project_name(env)
-#     table_path = table_id(project_id, dataset_id, table_name)
-#     pandas_gbq.to_gbq(df, table_path, project_id=project_id)
-#     return True
-
-
-# --------------------------------------------------------------
 # Google BQ API
 # --------------------------------------------------------------
 
@@ -192,7 +134,7 @@ def delete_bq_table(table_id, project_id=PROJECT_ID,
         client = bigquery.Client(project=PROJECT_ID)
 
     # Construct full table identifier path.
-    table_path = table_id(project_id, dataset_id, table_id)[1:-1]
+    table_path = get_qualified_table_id(project_id, dataset_id, table_id)[1:-1]
 
     # Delete the table if it exists.
     try:
@@ -719,8 +661,8 @@ def load_data_bq(model_name, data_name, project, dataset):
 
     if project is not None and dataset is not None:
         table_name = f'{model_name}-{data_name}'
-        table_id = table_id(table_name, project_id=project_id,
-                            dataset_id=dataset_id)
+        table_id = get_qualified_table_id(table_name, project_id=project_id,
+                                          dataset_id=dataset_id)
         print(f'\nBQ Table ID: {table_id}')
         query = f"SELECT * FROM {table_id}"
         df = run_pdbq(query)
@@ -1078,3 +1020,62 @@ def download_file(file_id, json_key_file, local_file_path):
 # ****************************************************************
 # End of File
 # ****************************************************************
+
+
+# --------------------------------------------------------------
+
+# def create_bq_table(table_name, df, project_id=PROJECT_ID,
+#                     dataset_id=DATASET_ID):
+#     # table_id = bq_table_id(project_id, table_name, env=env)
+#     project_name = bq_project_name(env)
+#     table_path = table_id(project_id, dataset_id, table_name)
+#     pandas_gbq.to_gbq(df, table_path, project_id=project_id)
+#     return True
+
+
+# # --------------------------------------------------------------
+# # Run BQ Query
+# # --------------------------------------------------------------
+
+# def run_bq_query(query, client=None):
+#     'Runs a qury on Google Big Query and returns the results.'
+
+#     client = bigquery.Client(project=PROJECT_ID) if client is None else client
+#     query_job = client.query(query)
+
+#     # Waits for job to complete.
+#     results = query_job.result()
+#     return results
+
+
+# # --------------------------------------------------------------
+# # Create BQ Table 
+# # --------------------------------------------------------------
+
+# def create_bq_table(project, dataset, table_name, df):
+#     table_id = bq_table_id(project, dataset, table_name)
+#     pandas_gbq.to_gbq(df, table_id, project_id=project)
+#     return True
+
+
+# # --------------------------------------------------------------
+# # Delete BQ Table
+# # --------------------------------------------------------------
+
+# def delete_bq_table(project, dataset, table_name, client=None):
+#     'Deletes the specified table in specified Opus hmbu environment.'
+
+#     # Construct a BigQuery client object unless provide
+#     if client is None:
+#         client = bigquery.Client(project=project)
+
+#     table_id = bq_table_id(project, dataset, table_name)
+
+#     # Delete the table if it exists.
+#     try:
+#         client.delete_table(table_id, not_found_ok=True)
+#         print("Deleted table '{}'.".format(table_id))
+#         return True
+#     except Exception as e:
+#         print(f'Error deleting table:\n{e}')
+#         return False
