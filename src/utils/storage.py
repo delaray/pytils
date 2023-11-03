@@ -92,7 +92,7 @@ def table_exists(client, table_id, dataset_id=DATASET_ID):
         client.get_table(table_ref)
         return True 
     except Exception as err:
-        # print(f'\nError: Table {table_ref} not found.\n{err}')
+        # logger.warning(f'\nError: Table {table_ref} not found.\n{err}')
         return False 
 
 
@@ -130,7 +130,7 @@ def delete_bq_table(client, table_id, project_id=PROJECT_ID,
 
     # Construct full table identifier path.
     table_path = get_qualified_table_id(project_id, dataset_id, table_id)[1:-1]
-    print(f'\nTable Path: {table_path}\n')
+    logger.warning(f'\nTable Path: {table_path}\n')
     # Delete the table if it exists.
 
     if table_exists(client, table_id, dataset_id=dataset_id) is True:
@@ -425,8 +425,8 @@ def download_blob(blob_pathname, file_name, model_name, folder = 'data'):
 
     blobs = named_blobs(blob_pathname)
     if blobs is None:
-        # print(f'Warning:\nNo blob named {blob_filenmae} was found on path {blob_pathname}.')
-        # print(f'The file {file_pathname} was not dowloaded to local filesystem.\n')
+        # logger.warning(f'Warning:\nNo blob named {blob_filenmae} was found on path {blob_pathname}.')
+        # logger.warning(f'The file {file_pathname} was not dowloaded to local filesystem.\n')
         return False
     else:
         directory_path = data_directory_fs(model_name, target=folder)
@@ -440,7 +440,7 @@ def download_data_blob(model_name, file_pathname, storage=GCP_STORAGE,
                        bucket=GCP_BUCKET, folder=None):
     'Downloads a data blob from the named model.'
 
-    print(f'\nBucket: {bucket}\nStorage: {storage}\nFolder: {folder}\n)')
+    logger.warning(f'\nBucket: {bucket}\nStorage: {storage}\nFolder: {folder}\n)')
     blob_path = data_directory_gs(model_name, bucket=bucket, storage=storage,
                                   folder=folder)
 
@@ -665,9 +665,9 @@ def load_data_bq(model_name, data_name, project, dataset):
     if project is not None and dataset is not None:
         table_id = get_qualified_table_id(project, dataset, data_name)
         # table_name = f'{model_name}-{data_name}'
-        # print(f'\nBQ Table ID: {table_name}')
+        # logger.warning(f'\nBQ Table ID: {table_name}')
         # query = f"SELECT * FROM {table_name}"
-        print(f'\nBQ Table ID: {table_id}')
+        logger.warning(f'\nBQ Table ID: {table_id}')
         query = f"SELECT * FROM {table_id}"
         df = run_pdbq(query)
         return df
@@ -893,7 +893,7 @@ def get_google_sheet(url: str, json_key_file=AUTH_FILE):
         return sheet.worksheet('Sheet1'), client
 
     except Exception as err:
-        print(f'\nError accessing Google sheet:\n{url}')
+        logger.warning(f'\nError accessing Google sheet:\n{url}')
         return None, client
     
 
@@ -970,11 +970,11 @@ def list_files_in_folder(folder_url, json_key_file=AUTH_FILE):
     files = results.get('files', [])
 
     if not files:
-        print('No files found.')
+        logger.warning('No files found.')
     else:
-        print('Files:')
+        logger.warning('Files:')
         for file in files:
-            print(f'{file["name"]} ({file["id"]})')
+            logger.warning(f'{file["name"]} ({file["id"]})')
 
     return files
 
@@ -1007,13 +1007,13 @@ def download_file(file_id, json_key_file, local_file_path):
     done = False
     while done is False:
         status, done = downloader.next_chunk()
-        print(f'Download {int(status.progress() * 100)}%.')
+        logger.warning(f'Download {int(status.progress() * 100)}%.')
 
     # Save the file to the local file system
     with open(local_file_path, 'wb') as out_file:
         out_file.write(downloaded_io.getvalue())
 
-    print(f'File {file_name} downloaded to {local_file_path}.')
+    logger.warning(f'File {file_name} downloaded to {local_file_path}.')
 
 # Usage:
 # Replace 'your-file-id' with the ID of your Google Drive file
@@ -1022,7 +1022,7 @@ def download_file(file_id, json_key_file, local_file_path):
 # download_file('your-file-id', 'your-json-key-file.json', 'your-local-file-path')
 
 # ****************************************************************
-# End of File
+# OLD CODE
 # ****************************************************************
 
 
@@ -1078,8 +1078,12 @@ def download_file(file_id, json_key_file, local_file_path):
 #     # Delete the table if it exists.
 #     try:
 #         client.delete_table(table_id, not_found_ok=True)
-#         print("Deleted table '{}'.".format(table_id))
+#         logger.warning("Deleted table '{}'.".format(table_id))
 #         return True
 #     except Exception as e:
 #         print(f'Error deleting table:\n{e}')
 #         return False
+
+# ****************************************************************
+# End of File
+# ****************************************************************
