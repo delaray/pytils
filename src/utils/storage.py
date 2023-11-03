@@ -124,14 +124,6 @@ def run_pdbq(query, project_id=PROJECT_ID):
 
 DATASET_ID = GCP_DATASET
 
-# ----------------------------------------------------------------
-
-def bq_project_name(env='dev'):
-    return PROJECT_ID
-
-
-# ----------------------------------------------------------------
-
 
 def table_id(project, dataset, table_name):
     table_path = f'`{project}.{dataset}.{table_name}`'
@@ -139,12 +131,17 @@ def table_id(project, dataset, table_name):
     return table_path
 
 
-# def table_id(table_name, project_id=PROJECT_ID,dataset_id=DATASET_ID):
-#     project_name = bq_project_name(env)
-#     table_id = f'`{project_id}.{dataset_id}.{table_name}`'
-#     # table_id = f'{project_name}.{BQ_DATASET_NAME}.{table_name}'
-#     logger.warning(f'\nTable_id: {table_id}\n')
-#     return table_id
+# --------------------------------------------------------------
+
+def table_exists(table_id, dataset_id=DATASET_ID, client=None):
+    client = client if client is not None else bigquery.Client()
+    table_ref = client.dataset(dataset_id).table(table_id)
+    try:
+        client.get_table(table_ref)
+        return True 
+    except Exception as err:
+        # print(f'\nError: Table {table_ref} not found.\n{err}')
+        return False 
 
 
 # --------------------------------------------------------------
@@ -186,7 +183,7 @@ def run_bq_query(query, client=None):
 
 # --------------------------------------------------------------
 
-def delete_bq_table(table_name, project_id=PROJECT_ID,
+def delete_bq_table(table_id, project_id=PROJECT_ID,
                     dataset_id=DATASET_ID, client=None):
     'Deletes the specified table.'
 
@@ -194,13 +191,18 @@ def delete_bq_table(table_name, project_id=PROJECT_ID,
     if client is None:
         client = bigquery.Client(project=PROJECT_ID)
 
-    table_path = table_id(project_id, dataset_id, table_name)[1:-1]
+    # Construct full table identifier path.
+    table_path = table_id(project_id, dataset_id, table_id)[1:-1]
 
     # Delete the table if it exists.
     try:
-        client.delete_table(table_path, not_found_ok=True)
-        logger.warning("Deleted table '{}'.".format(table_path))
-        return True
+        if table_exists(client, dataset_id, table_id) is True:
+            client.delete_table(table_path, not_found_ok=True)
+            logger.warning("Deleted table '{}'.".format(table_path))
+            return True
+        else:
+            return False
+        
     except Exception as e:
         logger.error(f'Error deleting table:\n{e}')
         return False
