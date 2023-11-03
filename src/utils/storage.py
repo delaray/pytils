@@ -86,8 +86,7 @@ def get_qualified_table_id(project, dataset, table_name):
 
 # --------------------------------------------------------------
 
-def table_exists(table_id, dataset_id=DATASET_ID, client=None):
-    client = client if client is not None else bigquery.Client()
+def table_exists(client, table_id, dataset_id=DATASET_ID):
     table_ref = client.dataset(dataset_id).table(table_id)
     try:
         client.get_table(table_ref)
@@ -125,29 +124,33 @@ def run_bq_query(query, client=None):
 
 # --------------------------------------------------------------
 
-def delete_bq_table(table_id, project_id=PROJECT_ID,
-                    dataset_id=DATASET_ID, client=None):
+def delete_bq_table(client, table_id, project_id=PROJECT_ID,
+                    dataset_id=DATASET_ID):
     'Deletes the specified table.'
-
-    # Construct a BigQuery client object unless provide
-    if client is None:
-        client = bigquery.Client(project=PROJECT_ID)
 
     # Construct full table identifier path.
     table_path = get_qualified_table_id(project_id, dataset_id, table_id)[1:-1]
-
+    print(f'\nTable Path: {table_path}\n')
     # Delete the table if it exists.
-    try:
-        if table_exists(client, dataset_id, table_id) is True:
-            client.delete_table(table_path, not_found_ok=True)
-            logger.warning("Deleted table '{}'.".format(table_path))
-            return True
-        else:
-            return False
-        
-    except Exception as e:
-        logger.error(f'Error deleting table:\n{e}')
+
+    if table_exists(client, table_id, dataset_id=dataset_id) is True:
+        client.delete_table(table_path, not_found_ok=True)
+        logger.warning("Deleted table '{}'.".format(table_path))
+        return True
+    else:
         return False
+
+    # try:
+    #     if table_exists(client, dataset_id, table_id) is True:
+    #         client.delete_table(table_path, not_found_ok=True)
+    #         logger.warning("Deleted table '{}'.".format(table_path))
+    #         return True
+    #     else:
+    #         return False
+        
+    # except Exception as e:
+    #     logger.error(f'Error deleting table:\n{e}')
+    #     return False
 
 
 # --------------------------------------------------------------
