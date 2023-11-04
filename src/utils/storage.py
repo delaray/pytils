@@ -2,9 +2,10 @@
 # Google BigQuery, Google Storage, Data Persistence API
 # ****************************************************************
 #
-# Part 1: Google BigQuery & Pandas GBQ
-# Part 2: Google Cloud Storage
-# Part 3: Data Persistence API
+# Part 1: Google Cloud Storage
+# Part 2: Google BigQuery & Pandas GBQ
+# Part 3: Google Storage and Local FS
+# Part 4: Data Persistence API
 #
 # ****************************************************************
 
@@ -35,54 +36,39 @@ from utils.files import load_text_file, save_text_file
 from utils.data import save_dict
 
 import logging
+
+# Need a better way of initilizing logger
 logger = logging.getLogger()
+
 
 # ****************************************************************
 # DATA LOCATION 
 # ****************************************************************
 
-# GCP KGUTILS Google BQ Defaults
-PROJECT_ID =os.environ.get('GCP_PROJECT_ID', 'babar-297510')
+# KGUTILS GCP Defaults
+PROJECT_ID =os.environ.get('PROJECT_ID', 'babar-297510')
 
 # GCP Default values
 GCP_BUCKET = 'babar'
 GCP_STORAGE = 'aiscape'
 GCP_DATASET = 'aiscape'
+DATASET_ID = GCP_DATASET
 
 # Local FileSystem Data Directory 
 DATA_DIR = os.environ['DATA_DIR']
 
 # ****************************************************************
-# Part 1:  Pandas GBQ
-# ****************************************************************
-
-# ----------------------------------------------------------------
-# Pandas GBQ API
-# ----------------------------------------------------------------
-
-def run_pdbq(query, project_id=PROJECT_ID):
-    'Uses Pandas-GBQ to run a Google BQ query and returns a dataframe.'
-
-    df = pd.read_gbq(query, project_id=project_id)
-    return df
-
-
-# ****************************************************************
 # Part 2: Google BigQuery
 # ****************************************************************
 
-# ****************************************************************
-# Part 5: GCP
-# ****************************************************************
-
-DATASET_ID = GCP_DATASET
-
 
 def get_qualified_table_id(project, dataset, table_name):
+    'Return the fullt quali9fied BD table path'
+    
     table_path = f'`{project}.{dataset}.{table_name}`'
     logger.warning(f'\nTable_id: {table_path}\n')
+    
     return table_path
-
 
 # --------------------------------------------------------------
 
@@ -96,16 +82,9 @@ def table_exists(client, table_id, dataset_id=DATASET_ID):
         return False 
 
 
-# --------------------------------------------------------------
-# Pandas GBQ API
-# --------------------------------------------------------------
-
-def run_pdbq(query, project_id=PROJECT_ID):
-    'Uses Pandas-GBQ to run a Google BQ query and returns a dataframe.'
-
-    df = pd.read_gbq(query, project_id=project_id)
-    return df
-
+# ****************************************************************
+# Part 5: GCP
+# ****************************************************************
 
 # --------------------------------------------------------------
 # Google BQ API
@@ -133,25 +112,52 @@ def delete_bq_table(client, table_id, project_id=PROJECT_ID,
     logger.warning(f'\nTable Path: {table_path}\n')
     # Delete the table if it exists.
 
-    if table_exists(client, table_id, dataset_id=dataset_id) is True:
-        client.delete_table(table_path, not_found_ok=True)
-        logger.warning("Deleted table '{}'.".format(table_path))
-        return True
-    else:
+    try:
+        if table_exists(client, dataset_id, table_id) is True:
+            client.delete_table(table_path, not_found_ok=True)
+            logger.warning("Deleted table '{}'.".format(table_path))
+            return True
+        else:
+            return False
+        
+    except Exception as err:
+        logger.error(f'\nError deleting table {table_path}:\n{err}')
         return False
 
-    # try:
-    #     if table_exists(client, dataset_id, table_id) is True:
-    #         client.delete_table(table_path, not_found_ok=True)
-    #         logger.warning("Deleted table '{}'.".format(table_path))
-    #         return True
-    #     else:
-    #         return False
-        
-    # except Exception as e:
-    #     logger.error(f'Error deleting table:\n{e}')
-    #     return False
 
+# --------------------------------------------------------------
+
+def count_bq_table(client, table_id, project_id=PROJECT_ID,
+                   dataset_id=DATASET_ID):
+        
+    table_path = get_qualified_table_id(project_id, dataset_id, table_id)
+    try:
+        query = f'SELECT count(*) from {table_path};'
+        results = run_bq_query(query, client=client)
+        count = list(results)[0].values()[0] 
+        return count
+
+                     
+    except Exception as err:
+        logger.error(f'\nError counting rows in table {table_path}:\n{err}')
+        return None
+
+
+# --------------------------------------------------------------
+
+def clear_bq_table(client, table_id, project_id=PROJECT_ID,
+                   dataset_id=DATASET_ID):
+        
+    table_path = get_qualified_table_id(project_id, dataset_id, table_id)
+    try:
+        logger.warning(f'\nTable Path: {table_path}\n')
+        query = f'DELETE from {table_path} WHERE true;'
+        run_bq_query(query, client=client)
+        return True
+                     
+    except Exception as err:
+        logger.error(f'\nError clearing table {table_path}:\n{err}')
+        return False
 
 # --------------------------------------------------------------
 # Ensure BQ Column Type Values
@@ -176,7 +182,10 @@ def ensure_bq_column_type_values(df):
     return df
 
 
-# ----------------------------------------------------------------------
+# --------------------------------------------------------------
+# Table to BQ
+# --------------------------------------------------------------
+
 
 def table_to_bq(df, project=PROJECT_ID, dataset='', table_name=''):
     'Write dataframe to Big Query.'
@@ -193,8 +202,23 @@ def table_to_bq(df, project=PROJECT_ID, dataset='', table_name=''):
     return True
 
 
+# ****************************************************************
+# Part 2:  Pandas GBQ
+# ****************************************************************
+
+# ----------------------------------------------------------------
+# Pandas GBQ API
+# ----------------------------------------------------------------
+
+def run_pdbq(query, project_id=PROJECT_ID):
+    'Uses Pandas-GBQ to run a Google BQ query and returns a dataframe.'
+
+    df = pd.read_gbq(query, project_id=project_id)
+    return df
+
+
 # **************************************************************
-# Part 2: Google Cloud Storage
+# Part 3: Google Cloud Storage
 # **************************************************************
 
 # --------------------------------------------------------------
