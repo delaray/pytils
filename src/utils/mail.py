@@ -20,19 +20,23 @@ HOTMAIL_SERVER = "outlook.office365.com"
 
 # -----------------------------------------------------------------
 
+GMAIL_EMAIL = "raymond.delacaze@gmail.com"
 GMAIL_PWD = os.environ['GMAIL_PWD']
+GMAIL_SMTP_SERVER = "smtp.gmail.com"
+GMAIL_SMTP_PORT = 465
 
 
 # ********************************************************************************
-# Part 2: Sending Mail
+# Part 2: Sending Email
 # ********************************************************************************
 
 def send_email(receiver_email, subject, content,
-               sender_email="raymond.delacaze@gmail.com"):
-    port = 465  # For SSL
-    smtp_server = "smtp.gmail.com"
-    # sender_email = "babar.system@gmail.com"  
-    password = GMAIL_PWD
+               sender_email=GMAIL_EMAIL,
+               sender_pwd=GMAIL_PWD):
+     # For SSL
+    port = GMAIL_OUTGOING_PORT 
+    smtp_server = GMAIL_SMTP_SERVER
+
 
     message = MIMEMultipart("alternative")
     message["Subject"] = subject
@@ -46,16 +50,18 @@ def send_email(receiver_email, subject, content,
     
     try:
         with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
-            server.login(sender_email, password)
+            server.login(sender_email, sender_pwd)
             server.sendmail(sender_email, receiver_email, message.as_string())
         return True
     except Exception as e:
         print("Unable to send mail: " + str(e))
         return False
 
+    
+# sender_email = "babar.system@gmail.com"  
 
 # ********************************************************************************
-# Part 2: Retrieving Mails
+# Part 2: Retrieving Emails
 # ********************************************************************************
 
 # Creating a script to access an email account requires careful handling
@@ -133,11 +139,12 @@ def get_emails_from_sender(sender_email, user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
 # Get  Hotmail Account
 # -----------------------------------------------------------------
 
-def get_hotmail_account(user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
+def get_hotmail_account(user=HOTMAIL_USER, pwd=HOTMAIL_PWD,
+                        server=HOTMAIL_SERVER):
     try:
         user_email = f'{user}@hotmail.com'
         credentials = Credentials(user_email, pwd)
-        config = Configuration(server=HOTMAIL_SERVER, credentials=credentials)
+        config = Configuration(server=server, credentials=credentials)
         account = Account(primary_smtp_address=user_email,
                         config=config,
                           autodiscover=False,
@@ -151,8 +158,7 @@ def get_hotmail_account(user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
 # Get  Hotmail Messages
 # -----------------------------------------------------------------
 
-def get_hotmail_messages(sender_email, user=HOTMAIL_USER, pwd=HOTMAIL_PWD,
-                         server=HOTMAIL_SERVER):
+def get_hotmail_messages(sender_email, user=HOTMAIL_USER, pwd=HOTMAIL_PWD)
     
     account = get_hotmail_account(user=user, pwd=pwd)
 
@@ -172,6 +178,18 @@ def get_hotmail_messages(sender_email, user=HOTMAIL_USER, pwd=HOTMAIL_PWD,
 def get_processed_mail_folder(account):
     return account.root/'Top of Information Store'/'Aiscape'/'Processed'
 
+
+# -----------------------------------------------------------------
+
+def move_message_to_processed(message, user=HOTMAIL_USER, pwd=HOTMAIL_PWD,):
+    account = get_hotmail_account(user=user, pwd=pwd)
+    to_folder = get_processed_mail_folder(account)
+    status = move_hotmail_message(message, to_folder=to_folder,
+                                  user=user, pwd)
+    return status
+
+                         
+# -----------------------------------------------------------------
 
 def move_hotmail_message(message, to_folder=None, user=HOTMAIL_USER,
                          pwd=HOTMAIL_PWD,):
