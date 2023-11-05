@@ -110,15 +110,13 @@ def delete_bq_table(client, table_id, project_id=PROJECT_ID,
 
     # Construct full table identifier path.
     table_path = get_qualified_table_id(project_id, dataset_id, table_id)[1:-1]
-    logger.warning(f'\nTable Path: {table_path}\n')
+    # logger.warning(f'\nTable Path: {table_path}\n')
     # Delete the table if it exists.
 
-    print(f'\nExists: {table_exists(client, table_id, dataset_id)}\n')
-    print(f'Path: {table_path}\n')
     try:
         if table_exists(client, table_id, dataset_id) is True:
             client.delete_table(table_path, not_found_ok=True)
-            logger.warning("Deleted table '{}'.".format(table_path))
+            logger.warning(f"Deleted table: {table_path}.")
             return True
         else:
             return False
