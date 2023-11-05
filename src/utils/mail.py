@@ -9,24 +9,30 @@ import imaplib
 from email.header import decode_header
 from exchangelib import Credentials, Account, Configuration, DELEGATE
 
+
+# ********************************************************************************
+# Part 1: Email Accounts
+# ********************************************************************************
+
 HOTMAIL_USER = os.environ['HOTMAIL_USER']
 HOTMAIL_PWD = os.environ['HOTMAIL_PWD']
 HOTMAIL_SERVER = "outlook.office365.com"
 
 # -----------------------------------------------------------------
 
+GMAIL_PWD = os.environ['GMAIL_PWD']
 
 
 # ********************************************************************************
-# Part 1: Sending Mail
+# Part 2: Sending Mail
 # ********************************************************************************
 
-def send_email(receiver_email, subject, content):
+def send_email(receiver_email, subject, content,
+               sender_email="raymond.delacaze@gmail.com"):
     port = 465  # For SSL
     smtp_server = "smtp.gmail.com"
     # sender_email = "babar.system@gmail.com"  
-    sender_email = "raymond.delacaze@gmail.com"  
-    password = os.environ['EMAIL_PWD']
+    password = GMAIL_PWD
 
     message = MIMEMultipart("alternative")
     message["Subject"] = subject
