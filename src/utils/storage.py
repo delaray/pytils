@@ -46,7 +46,8 @@ logger = logging.getLogger()
 # ****************************************************************
 
 # KGUTILS GCP Defaults
-PROJECT_ID =os.environ.get('PROJECT_ID', 'babar-297510')
+# PROJECT_ID =os.environ.get('PROJECT_ID', 'babar-297510')
+PROJECT_ID = 'babar-297510'
 
 # GCP Default values
 GCP_BUCKET = 'babar'
