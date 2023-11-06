@@ -21,7 +21,7 @@ HOTMAIL_SERVER = "outlook.office365.com"
 # -----------------------------------------------------------------
 
 GMAIL_EMAIL = "raymond.delacaze@gmail.com"
-GMAIL_PWD = os.environ['GMAIL_PWD']
+GMAIL_PWD = os.environ.get('GMAIL_PWD', 'XXXXX') 
 GMAIL_SMTP_SERVER = "smtp.gmail.com"
 GMAIL_SMTP_PORT = 465
 
@@ -143,7 +143,7 @@ def get_hotmail_account(user=HOTMAIL_USER, pwd=HOTMAIL_PWD,
                         server=HOTMAIL_SERVER):
     try:
         user_email = f'{user}@hotmail.com'
-        credentials = Credentials(user_email, pwd)
+        credentials = Credentials(user_email, pwd=pwd)
         config = Configuration(server=server, credentials=credentials)
         account = Account(primary_smtp_address=user_email,
                         config=config,
@@ -158,7 +158,7 @@ def get_hotmail_account(user=HOTMAIL_USER, pwd=HOTMAIL_PWD,
 # Get  Hotmail Messages
 # -----------------------------------------------------------------
 
-def get_hotmail_messages(sender_email, user=HOTMAIL_USER, pwd=HOTMAIL_PWD)
+def get_hotmail_messages(sender_email, user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
     
     account = get_hotmail_account(user=user, pwd=pwd)
 
@@ -181,18 +181,18 @@ def get_processed_mail_folder(account):
 
 # -----------------------------------------------------------------
 
-def move_message_to_processed(message, user=HOTMAIL_USER, pwd=HOTMAIL_PWD,):
+def move_message_to_processed(message, user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
     account = get_hotmail_account(user=user, pwd=pwd)
     to_folder = get_processed_mail_folder(account)
     status = move_hotmail_message(message, to_folder=to_folder,
-                                  user=user, pwd)
+                                  user=user, pwd=pwd)
     return status
 
-                         
+      
 # -----------------------------------------------------------------
 
 def move_hotmail_message(message, to_folder=None, user=HOTMAIL_USER,
-                         pwd=HOTMAIL_PWD,):
+                         pwd=HOTMAIL_PWD):
 
     try:
         account = get_hotmail_account(user=user, pwd=pwd)
