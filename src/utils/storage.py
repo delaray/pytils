@@ -67,7 +67,7 @@ def get_qualified_table_id(project, dataset, table_name):
     'Return the fullt quali9fied BD table path'
     
     table_path = f'`{project}.{dataset}.{table_name}`'
-    logger.warning(f'\nTable_id: {table_path}\n')
+    # logger.warning(f'\nTable_id: {table_path}\n')
     
     return table_path
 
@@ -689,10 +689,7 @@ def load_data_bq(model_name, data_name, project, dataset):
 
     if project is not None and dataset is not None:
         table_id = get_qualified_table_id(project, dataset, data_name)
-        # table_name = f'{model_name}-{data_name}'
-        # logger.warning(f'\nBQ Table ID: {table_name}')
-        # query = f"SELECT * FROM {table_name}"
-        logger.warning(f'\nBQ Table ID: {table_id}')
+        # logger.warning(f'\nBQ Table ID: {table_id}')
         query = f"SELECT * FROM {table_id}"
         df = run_pdbq(query)
         return df
