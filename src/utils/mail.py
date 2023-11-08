@@ -252,7 +252,7 @@ def get_message_urls(message, prefix=''):
     # Combine and deduplicate the lists of URLs
     urls = list(set(text_body_urls + html_body_urls))
 
-    urls = [url for url in urls if url.startswith(prefix) is True]
+    # urls = [url for url in urls if url.startswith(prefix) is True]
 
     def shorten(url):
         try:
