@@ -38,25 +38,12 @@ REQUEST_HEADERS = {'User-Agent': 'Chrome/83.0.4103.97',
                    'Accept-Language': 'en-US,en;q=0.8',
                    'Connection': 'keep-alive'}
 
-DATA = {'tx_howsite_json_list[page]': '1',
-        'tx_howsite_json_list[limit]': '12',
-        'tx_howsite_json_list[lang]': '',
-        'tx_howsite_json_list[rent]': '',
-        'tx_howsite_json_list[area]': '',
-        'tx_howsite_json_list[rooms]': 'egal',
-        'tx_howsite_json_list[wbs]': 'all-offers'}
-
-REQUEST_HEADERS_2 = {'User-Agent': 'Popular browser\'s user-agent',
-                     'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
-                     'Accept-Encoding': 'none',
-                     'Accept-Language': 'en-US,en;q=0.8',
-                     'Connection': 'keep-alive'}
 
 # --------------------------------------------------------------------
 # URL Response and Data
 # --------------------------------------------------------------------
 
-def get_url_response(url, headers=REQUEST_HEADERS_2, params={}):
+def get_url_response(url, headers=REQUEST_HEADERS, params={}):
     'Returns a response object or None'
     
     try:
@@ -98,12 +85,15 @@ def get_chrome_content(url):
                        
 # --------------------------------------------------------------------
 
+H1 =  'text/html,application/xhtml+xml,application/xml;'
+H2 =  'q=0.9,image/avif,image/webp,*/*;q=0.8'
+HEADER2 = H1 + H2
+
 def get_url_content(url):
 
     req = urllib.request.Request(url)
     req.add_header('User-Agent', 'Chrome/83.0.4103.97')
-    header2 = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8'
-    req.add_header('Accept', header2)
+    req.add_header('Accept', H2)
     req.add_header('Accept-Language', 'en-US,en;q=0.5')
 
     content = urllib.request.urlopen(req).read().decode('utf-8')
@@ -118,7 +108,7 @@ def parse_page_source(url, page_source):
     title = htmlcontent.find("h1")
     title = title.string.replace('\n', '').strip() if title is not None else ''
     subtitles = htmlcontent.find_all("h2", {"class": re.compile('article')})
-    subtitles = [s.string for s in subtitles if s is not None]
+    subtitle = [s.string for s in subtitles if s is not None]
     subtitles = [s.replace('\n', '').strip() for s in subtitles]
     passages = [p.get_text for p in htmlcontent.find_all("p", class_=None)]
 
@@ -160,21 +150,20 @@ def get_url_text(url):
 
 
 # ******************************************************************
-# Part 1: Generic Web Scraping Tools
+# Part 2: Generic Web Scraping Tools
 # ******************************************************************
 
-
-def link_contains_stop_word(link, stop_words):
+def contains_stop_word(link, stop_words):
     result = False
     for x in stop_words:
         if x in link['href']:
             result = True
     return result
 
+
 # -------------------------------------------------------------------
 # URL Predicates
 # -------------------------------------------------------------------
-
 
 def full_url_p(url):
     return ('http://' in url) or ('https://' in url)
@@ -203,15 +192,52 @@ def internal_link_p(url, site_url):
 # URL Extraction.
 # -------------------------------------------------------------------
 
+def pure_url(url):
+    'Removes the parameters of url'
+    return url[:url.index("?")] if "?" in url else url
+
+# -------------------------------------------------------------------
+
+def extract_title(url, response=None):
+    response = get_url_response(url) if response is None else response
+    if response is not None:
+        soup = BeautifulSoup(response.content, 'lxml')
+        title = soup.find("h1")
+        title = title.string.replace('\n', '').strip() if title is not None else ''
+        return title
+    else:
+        return None
+    
+# -------------------------------------------------------------------
+
 def extract_urls (url, filter='', stop_words=[]):
     response = get_url_response(url)
     urls = []
     if response is not None:
         soup = BeautifulSoup(response.content, 'lxml')
         for link in soup.find_all('a', href=True):
-            if filter in link['href'] and not link_contains_stop_word (link, stop_words):
+            if filter in link['href'] and not contains_stop_word (link, stop_words):
+                print(unquote(link['href']))
+                urls.append((unquote(link['href'])))
+        
+    urls = [url for url in urls if url.startswith('http') is True]
+    
+    return urls
+
+
+# -------------------------------------------------------------------
+
+def extract_url_entries (url, filter='', stop_words=[]):
+    response = get_url_response(url)
+    urls = []
+    if response is not None:
+        soup = BeautifulSoup(response.content, 'lxml')
+        for link in soup.find_all('a', href=True):
+            if filter in link['href'] and not contains_stop_word (link, stop_words):
                 urls.append([(unquote(link['href'])), link.get_text()])
-        #urls = list(set(urls))
+        
+    urls = [url for url in urls if url[0].startswith('http') is True]
+    
     return urls
 
 # -------------------------------------------------------------------
