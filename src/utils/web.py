@@ -2,6 +2,12 @@
 # Generic Web Functions
 # **********************************************************************
 
+# Part 1: Requests
+# Part 2: Scraping
+
+# **********************************************************************
+
+
 # Python imports
 from functools import reduce
 from itertools import chain, zip_longest
@@ -15,8 +21,12 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlparse, quote, unquote
 from selenium import webdriver
 
-CHROME_OPTIONS = webdriver.ChromeOptions()
+from utils.nlp import tokenize_text
 
+
+# --------------------------------------------------------------------
+
+CHROME_OPTIONS = None
 
 # --------------------------------------------------------------------
 # Standard Request Headers
@@ -66,7 +76,16 @@ def get_url_data(url, params={}):
     else:
         return str(response.content)
 
+    
+def initialize_chrome_options():
+    global CHROME_OPTIONS
+    CHROME_OPTIONS = webdriver.ChromeOptions()
+    return CHROME_OPTIONS
+
+
 def get_chrome_page_source(url, options=CHROME_OPTIONS):
+    if options is None:
+        options = initialize_chrome_options()
     browser = webdriver.Chrome(options=options)
     browser.get(url)
     return browser.page_source
@@ -139,6 +158,113 @@ def get_url_text(url):
     else:
         return None
 
+
+# ******************************************************************
+# Part 1: Generic Web Scraping Tools
+# ******************************************************************
+
+
+def link_contains_stop_word(link, stop_words):
+    result = False
+    for x in stop_words:
+        if x in link['href']:
+            result = True
+    return result
+
+# -------------------------------------------------------------------
+# URL Predicates
+# -------------------------------------------------------------------
+
+
+def full_url_p(url):
+    return ('http://' in url) or ('https://' in url)
+
+
+def make_full_url(url, full_url):
+    urlcomps = urlparse(full_url)
+    return urlcomps.scheme + '://' + urlcomps.netloc + url
+
+
+def same_domain_p(url1, url2):
+    comps1 = urlparse(url1)
+    comps2 = urlparse(url2)
+    return comps1.netloc == comps2.netloc
+
+
+def make_domain_url(url):
+    comps = urlparse(url)
+    return comps.scheme + '://' + comps.netloc + '/'
+
+
+def internal_link_p(url, site_url):
+    return same_domain_p(url, site_url)
+
+# -------------------------------------------------------------------
+# URL Extraction.
+# -------------------------------------------------------------------
+
+def extract_urls (url, filter='', stop_words=[]):
+    response = get_url_response(url)
+    urls = []
+    if response is not None:
+        soup = BeautifulSoup(response.content, 'lxml')
+        for link in soup.find_all('a', href=True):
+            if filter in link['href'] and not link_contains_stop_word (link, stop_words):
+                urls.append([(unquote(link['href'])), link.get_text()])
+        #urls = list(set(urls))
+    return urls
+
+# -------------------------------------------------------------------
+
+def extract_full_urls(url, root_url, filter='', stop_words=[]):
+    urls = extract_urls(url, filter, stop_words)
+    full_urls = []
+    for u in urls:
+        if not full_url_p(u):
+            full_url = make_full_url(u, root_url)
+        else:
+            full_url = u
+        full_urls.append(full_url)
+    return full_urls
+ 
+# -------------------------------------------------------------------
+
+def extract_internal_urls(url, root_url, filter='', stop_words=[]):
+    urls = extract_full_urls(url, root_url, filter, stop_words)
+    result = []
+    for u in urls:
+        if internal_link_p(u, root_url) == True:
+            result.append(u)
+    return(result)
+
+# -------------------------------------------------------------------
+
+# Defined for convenience. Tokenizes then the reasembles.
+
+def clean_sentence(s):
+    tokens = tokenize_text(s)
+    return ' '.join(tokens)
+
+# -------------------------------------------------------------------
+
+def extract_text(url):
+    content = get_url_data(url)
+    text = []
+    if content is not None:
+        soup = BeautifulSoup(content, 'lxml')
+        for x in soup.find_all('p'):
+            text.append(x.get_text())
+        text = [unquote(x)  for x in text if len(x) > 2]
+    return text
+
+# -------------------------------------------------------------------
+
+CHROME_OPTIONS
+def extract_clean_text (url):
+    text = extract_text(url)
+    clean = [clean_sentence(x) for x in text]
+    filtered = [x for x in clean if len(x.split(' ')) > 1]
+    return filtered
 
 # **********************************************************************
 # End of File

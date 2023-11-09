@@ -237,7 +237,7 @@ def move_hotmail_message(message, to_folder=None, user=HOTMAIL_USER,
 # Message URLS
 # -----------------------------------------------------------------
 
-def get_message_urls(message, prefix=''):
+def get_message_urls(message):
 
     # Define a regular expression pattern to match URLs
     url1 = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]'
@@ -251,8 +251,6 @@ def get_message_urls(message, prefix=''):
     
     # Combine and deduplicate the lists of URLs
     urls = list(set(text_body_urls + html_body_urls))
-
-    # urls = [url for url in urls if url.startswith(prefix) is True]
 
     def shorten(url):
         try:
