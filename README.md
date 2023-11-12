@@ -35,13 +35,7 @@ This Python library can be specified in a requirements.txt file as:
   
 or can be installed at the command with:  
     
-    pip install git+ssh://git@github.com/delaray/pytils.git 
+	pip install --ignore-installed git+ssh://git@github.com/delaray/pytils.git@develop
 	
 -----
-  
 
-
-
-  
-  
-----

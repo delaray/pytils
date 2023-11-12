@@ -163,10 +163,18 @@ def get_hotmail_messages(sender_email, user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
     account = get_hotmail_account(user=user, pwd=pwd)
 
     if account is not None:
-        folder = account.inbox
-        items = folder.filter(sender=sender_email)
-        messages = list(items)
-        return messages
+        # Try a few times to avoid occasional TokenExpiredError due
+        # to value computed before the lock was acquired.
+        for i in range(3):
+            try:
+                folder = account.inbox
+                items = folder.filter(sender=sender_email)
+                messages = list(items)
+                return messages
+            except Exception as err:
+                print(f'Error {i+1) retrieving Hotmail messages. Retrying...')
+        print(f'Error retrieving Hotmail messages.\n{err}\n')
+        return None
     else:
         return None
 
