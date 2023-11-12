@@ -217,7 +217,7 @@ def extract_urls (url, filter='', stop_words=[]):
         soup = BeautifulSoup(response.content, 'lxml')
         for link in soup.find_all('a', href=True):
             if filter in link['href'] and not contains_stop_word (link, stop_words):
-                print(unquote(link['href']))
+                # print(unquote(link['href']))
                 urls.append((unquote(link['href'])))
         
     urls = [url for url in urls if url.startswith('http') is True]
