@@ -172,7 +172,7 @@ def get_hotmail_messages(sender_email, user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
                 messages = list(items)
                 return messages
             except Exception as err:
-                print(f'Error {i+1) retrieving Hotmail messages. Retrying...')
+                print(f'Error {i+1} retrieving Hotmail messages. Retrying...')
         print(f'Error retrieving Hotmail messages.\n{err}\n')
         return None
     else:
