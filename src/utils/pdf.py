@@ -251,10 +251,12 @@ def parse_document(pathname):
         title = parse_title(pages[0])
         authors = parse_authors(pages[0])
         abstract = parse_abstract(pages[0])
+        content = list(map(lambda page: page.extract_text(), pages))
         
     return {'title': title,
             'authors': authors,
-            'abstract': abstract}
+            'abstract': abstract,
+            'content': content}
  
 # *********************************************************************
 # End of File
