@@ -38,7 +38,7 @@ import re
 import platform
 import pandas as pd
 
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 
 
 # ********************************************************************************
@@ -240,7 +240,6 @@ def parse_authors(page):
         authors.append([name, company, email])
 
     return authors
-
 
 # --------------------------------------------------------------------------
 
