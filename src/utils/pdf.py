@@ -38,7 +38,8 @@ import re
 import platform
 import pandas as pd
 
-from pypdf import PdfReader
+# from pypdf import PdfReader
+from PyPDF2 import PdfReader
 
 
 # ********************************************************************************
@@ -256,7 +257,13 @@ def parse_document(pathname):
             'authors': authors,
             'abstract': abstract,
             'content': content}
- 
+
+
+# reader = PdfReader("example.pdf")
+# number_of_pages = len(reader.pages)
+# page = reader.pages[0]
+# text = page.extract_text()
+
 # *********************************************************************
 # End of File
 # ********************************************************************
