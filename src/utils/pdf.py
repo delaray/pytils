@@ -37,9 +37,12 @@ import os
 import re
 import platform
 import pandas as pd
+from datetime import datetime
 
 # from pypdf import PdfReader
 from PyPDF2 import PdfReader
+import pdfreader
+from pdfreader import PDFDocument, SimplePDFViewer
 
 
 # ********************************************************************************
@@ -244,19 +247,54 @@ def parse_authors(page):
 
 # --------------------------------------------------------------------------
 
-def parse_document(pathname):
-    with open(pathname, 'rb') as f:
+# Convert PDF Date format to datetime D:YYYYMMDDHHmmSS
+
+def convert_pdf_date(date):
+    year = int(date[2:6])
+    month = int(date[6:8])
+    day = int(date[8:10])
+    hour = int(date[10:12])
+    minute = int(date[12:14])
+    second = int(date[14:16])
+    return [year, month, day, hour, minute, second]
+
+
+# --------------------------------------------------------------------------
+
+# Convert PDF Date format to datetime D:YYYYMMDDHHmmSSdef parse_document(pathname):
+
+def parse_document(path):
+
+    
+    with open(path, 'rb') as f:
         reader = PdfReader(f)
+
+        # Process metadata for date information
+        try:
+            metadata = reader.metadata
+            published_date = convert_pdf_date(metadata['/CreationDate'])
+            published = datetime(*published_date)
+            updated_date =  convert_pdf_date(metadata['/ModDate'])
+            updated = datetime(*updated_date)
+            year = published_date[0]
+        except Exception as err:
+            print(f'\nError parsing document metadata:{path}\n{err}\n')
+            published, updated, year = None, None, 0
+
+        # Process title, authors and abstract
         pages = reader.pages
         title = parse_title(pages[0])
         authors = parse_authors(pages[0])
         abstract = parse_abstract(pages[0])
         content = list(map(lambda page: page.extract_text(), pages))
         
-    return {'title': title,
-            'authors': authors,
-            'abstract': abstract,
-            'content': content}
+        return {'title': title,
+                'authors': authors,
+                'year' : year,
+                'published': published,
+                'updated': updated,
+                'abstract': abstract,
+                'content': content}
 
 
 # reader = PdfReader("example.pdf")
