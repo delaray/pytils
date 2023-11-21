@@ -194,7 +194,7 @@ def parse_abstract(page):
     text = page.extract_text()
     lines = text.split('\n')
     start = lines.index('Abstract') + 1
-    end = lines.index('1 Introduction')
+    end = lines.index('.\n1 Introduction')
     lines = join_lines(lines[start: end])
     return lines
 
@@ -285,7 +285,7 @@ def parse_document(path):
         pages = reader.pages
         title = parse_title(pages[0])
         authors = parse_authors(pages[0])
-        abstract = parse_abstract(pages[0])
+        # abstract = parse_abstract(pages[0])
         content = list(map(lambda page: page.extract_text(), pages))
         
         return {'title': title,
@@ -293,7 +293,7 @@ def parse_document(path):
                 'year' : year,
                 'published': published,
                 'updated': updated,
-                'abstract': abstract,
+                # 'abstract': abstract,
                 'content': content}
 
 
