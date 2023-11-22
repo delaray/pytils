@@ -266,7 +266,7 @@ def convert_pdf_date(date):
 
 # Convert PDF Date format to datetime D:YYYYMMDDHHmmSSdef parse_document(pathname):
 
-def parse_document(path, include_content=False):
+def parse_document(path, include_content=True):
 
     with open(path, 'rb') as f:
         reader = PdfReader(f)
