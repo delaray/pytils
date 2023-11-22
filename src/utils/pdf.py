@@ -216,6 +216,8 @@ def is_valid_email(email: str) -> bool:
 
 # --------------------------------------------------------------------------
 
+EMAIL_PATTERN = '^([a-zA-Z0-9_\-\.]+)@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{2,5})$'
+
 def parse_authors(page):
     text = page.extract_text()
     lines = text.split('\n')
@@ -241,7 +243,8 @@ def parse_authors(page):
             company = name
         i += 1
         email = email.strip()
-        authors.append([name, company, email])
+        if len(re.findall(EMAIL_PATTERN, email)) > 0:
+            authors.append([name.replace('\u2217', ''), company, email])
 
     return authors
 
@@ -263,9 +266,8 @@ def convert_pdf_date(date):
 
 # Convert PDF Date format to datetime D:YYYYMMDDHHmmSSdef parse_document(pathname):
 
-def parse_document(path):
+def parse_document(path, include_content=False):
 
-    
     with open(path, 'rb') as f:
         reader = PdfReader(f)
 
@@ -285,22 +287,18 @@ def parse_document(path):
         pages = reader.pages
         title = parse_title(pages[0])
         authors = parse_authors(pages[0])
-        # abstract = parse_abstract(pages[0])
-        content = list(map(lambda page: page.extract_text(), pages))
+        if include_content is True:
+            content = list(map(lambda page: page.extract_text(), pages))
+        else:
+            content = None
         
         return {'title': title,
                 'authors': authors,
                 'year' : year,
                 'published': published,
                 'updated': updated,
-                # 'abstract': abstract,
                 'content': content}
 
-
-# reader = PdfReader("example.pdf")
-# number_of_pages = len(reader.pages)
-# page = reader.pages[0]
-# text = page.extract_text()
 
 # *********************************************************************
 # End of File
