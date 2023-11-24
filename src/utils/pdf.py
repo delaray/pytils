@@ -220,6 +220,8 @@ def is_valid_email(email: str) -> bool:
 
 EMAIL_PATTERN = '^([a-zA-Z0-9_\-\.]+)@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{2,5})$'
 
+# TODO: Make author extraction more robust:
+
 def parse_authors(page):
     text = page.extract_text()
     if 'Abstract' in text:
@@ -237,7 +239,7 @@ def parse_authors(page):
         lines = [unidecode(line) for line in lines]
         authors = []
         i = 0
-        print(f'\nLINES:\n{lines}\n')
+        # print(f'LINES:\n{lines}\n')
 
         try:
             while i < len(lines):
@@ -258,7 +260,7 @@ def parse_authors(page):
 
             return authors
         except Exception as err:
-            print(f'\nError in parse_authors.\n{err}\n')
+            # print(f'\nError in parse_authors.\n{err}\n')
             return []
 
     else:
