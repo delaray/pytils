@@ -223,17 +223,22 @@ EMAIL_PATTERN = '^([a-zA-Z0-9_\-\.]+)@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{2,5})$'
 def parse_authors(page):
     text = page.extract_text()
     if 'Abstract' in text:
+        
         lines = text.split('\n')
         start = 1
         end = lines.index('Abstract')
         text = '\n'.join(lines[start: end])
+        
         text = text.replace('.com', '.com \n')
         text = text.replace('.edu', '.edu \n')
         text = text.replace('.org', '.org \n')
         lines = text.split('\n')
         lines = list(filter(lambda elmt: elmt != '', lines))
+        lines = [unidecode(line) for line in lines]
         authors = []
         i = 0
+        print(f'\nLINES:\n{lines}\n')
+        
         while i < len(lines):
             name = lines[i]
             i += 1
@@ -244,7 +249,8 @@ def parse_authors(page):
             else:
                 email = company
                 company = name
-                i += 1
+            i += 1
+                
         email = email.strip()
         if len(re.findall(EMAIL_PATTERN, email)) > 0:
             authors.append([name.replace('\u2217', ''), company, email])
