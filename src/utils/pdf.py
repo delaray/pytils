@@ -238,24 +238,28 @@ def parse_authors(page):
         authors = []
         i = 0
         print(f'\nLINES:\n{lines}\n')
-        
-        while i < len(lines):
-            name = lines[i]
-            i += 1
-            company = lines[i]
-            if '@' not in company:
-                i += 1
-                email = lines[i]
-            else:
-                email = company
-                company = name
-            i += 1
-                
-        email = email.strip()
-        if len(re.findall(EMAIL_PATTERN, email)) > 0:
-            authors.append([name.replace('\u2217', ''), company, email])
 
-        return authors
+        try:
+            while i < len(lines):
+                name = lines[i]
+                i += 1
+                company = lines[i]
+                if '@' not in company:
+                    i += 1
+                    email = lines[i]
+                else:
+                    email = company
+                    company = name
+                i += 1
+                
+            email = email.strip()
+            if len(re.findall(EMAIL_PATTERN, email)) > 0:
+                authors.append([name.replace('\u2217', ''), company, email])
+
+            return authors
+        except Exception as err:
+            print(f'\nError in parse_authors.\n{err}\n')
+            return []
 
     else:
         return []
