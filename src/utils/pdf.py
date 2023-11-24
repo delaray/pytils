@@ -37,6 +37,7 @@ import os
 import re
 import platform
 import pandas as pd
+from unidecode import unidecode
 from datetime import datetime
 
 # from pypdf import PdfReader
@@ -214,39 +215,44 @@ def is_valid_email(email: str) -> bool:
     else:
         return False
 
+
 # --------------------------------------------------------------------------
 
 EMAIL_PATTERN = '^([a-zA-Z0-9_\-\.]+)@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{2,5})$'
 
 def parse_authors(page):
     text = page.extract_text()
-    lines = text.split('\n')
-    start = 1
-    end = lines.index('Abstract')
-    text = '\n'.join(lines[start: end])
-    text = text.replace('.com', '.com \n')
-    text = text.replace('.edu', '.edu \n')
-    text = text.replace('.org', '.org \n')
-    lines = text.split('\n')
-    lines = list(filter(lambda elmt: elmt != '', lines))
-    authors = []
-    i = 0
-    while i < len(lines):
-        name = lines[i]
-        i += 1
-        company = lines[i]
-        if '@' not in company:
+    if 'Abstract' in text:
+        lines = text.split('\n')
+        start = 1
+        end = lines.index('Abstract')
+        text = '\n'.join(lines[start: end])
+        text = text.replace('.com', '.com \n')
+        text = text.replace('.edu', '.edu \n')
+        text = text.replace('.org', '.org \n')
+        lines = text.split('\n')
+        lines = list(filter(lambda elmt: elmt != '', lines))
+        authors = []
+        i = 0
+        while i < len(lines):
+            name = lines[i]
             i += 1
-            email = lines[i]
-        else:
-            email = company
-            company = name
-        i += 1
+            company = lines[i]
+            if '@' not in company:
+                i += 1
+                email = lines[i]
+            else:
+                email = company
+                company = name
+                i += 1
         email = email.strip()
         if len(re.findall(EMAIL_PATTERN, email)) > 0:
             authors.append([name.replace('\u2217', ''), company, email])
 
-    return authors
+        return authors
+
+    else:
+        return []
 
 # --------------------------------------------------------------------------
 
