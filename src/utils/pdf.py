@@ -239,7 +239,7 @@ def parse_authors(page):
         lines = [unidecode(line) for line in lines]
         authors = []
         i = 0
-        # print(f'LINES:\n{lines}\n')
+        print(f'LINES:\n{lines}\n')
 
         try:
             while i < len(lines):
@@ -256,9 +256,11 @@ def parse_authors(page):
                 
             email = email.strip()
             if len(re.findall(EMAIL_PATTERN, email)) > 0:
-                authors.append([name.replace('\u2217', ''), company, email])
+                name = name.replace('\u2217', '')
+                authors.append([name, company, email])
 
             return authors
+        
         except Exception as err:
             # print(f'\nError in parse_authors.\n{err}\n')
             return []
