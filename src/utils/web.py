@@ -201,7 +201,8 @@ def is_valid_url(url):
         r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # ...or ip
         r'(?::\d+)?'  # optional port
         r'(?:/?|[/?]\S+)$', re.IGNORECASE)
-    return url is not None and regex.search(url)
+    result = regex.search(url)
+    return True if result is not None else False
 
 
 # -------------------------------------------------------------------
