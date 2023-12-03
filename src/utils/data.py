@@ -49,6 +49,14 @@ def split_dict(mydict, n=2):
 
 # ----------------------------------------------------------
 
+def chunk_dict(mydict, n=5):
+    'Returns a subset of mydict of length n.'
+
+    return {k: mydict[k] for k in list(refs.keys())[:n]}
+
+
+# ----------------------------------------------------------
+
 def split_dataframe(df, n=4):
     'Splits df into n+1 dataframes.'
     
