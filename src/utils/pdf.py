@@ -239,7 +239,7 @@ def parse_authors(page):
         lines = [unidecode(line) for line in lines]
         authors = []
         i = 0
-        print(f'LINES:\n{lines}\n')
+        # print(f'LINES:\n{lines}\n')
 
         try:
             while i < len(lines):
