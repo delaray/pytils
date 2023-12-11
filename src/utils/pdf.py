@@ -259,7 +259,7 @@ def parse_authors(page):
                 name = name.replace('\u2217', '')
                 authors.append([name, company, email])
 
-            print(f'\nParsed document authors:\n{authors}\n')
+            # print(f'\nParsed document authors:\n{authors}\n')
             return authors
         
         except Exception as err:
