@@ -39,6 +39,7 @@ import platform
 import pandas as pd
 from unidecode import unidecode
 from datetime import datetime
+from itertools import chain
 
 # from pypdf import PdfReader
 from PyPDF2 import PdfReader
@@ -56,14 +57,6 @@ PDF_FILE = '/education/papers/Attention-is-All-You-Need.pdf'
 # --------------------------------------------------------------------------
 # PyPDF2 Example
 # --------------------------------------------------------------------------
-
-#sample_file = \
-#   '/Users/pierre/nzup/dev/lstm-crif/books/1er-chap-un-juif-pour-exemple.pdf'
-
-sample_file = \
-    'c:\\Users\\pierre\\dev\\lstm-crif\\books\\1er-chap-un-juif-pour-exemple.pdf'
-
-sample_dir = 'c:\\Users\\pierre\\dev\\lstm-crif\\books'
 
 # Code copied from:
 # https://stackoverflow.com/questions/26494211/extracting-text-from-a-pdf-file-using-pdfminer-in-python
@@ -321,6 +314,19 @@ def parse_document(path, include_content=True):
                 'updated': updated,
                 'content': content}
 
+
+# *********************************************************************
+# Chunking
+# ********************************************************************
+
+def chunk_paragraph(text: str, delim='. ') -> str:
+    sentences = text.split(delim)
+    return sentences
+
+
+def chunk_paragraphs(texts: list, delim='. ') -> list:
+    sentences = [chunk_paragraph(text, delim=delim) for text in texts]
+    return list(chain(*sentences))
 
 # *********************************************************************
 # End of File
