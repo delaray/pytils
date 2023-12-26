@@ -23,15 +23,14 @@ def flatten(data):
 def split_list(mylist, n=2):
     'Returns mylist partitioned into n_parts evenly distributed sublists.'
 
-    # Compute offset indices
-    parts = int(len(mylist)/n)
-    indices = list(map(lambda x: [i*n+x for i in range(parts)], range(n)))
-    
-    # Insert list elements
-    sublists = list(map(lambda l: [mylist[i] for i in l], indices))
-    # Add trailing elements
-    sublists = sublists + [mylist[n*parts:]]
-    return sublists
+    if n < len(mylist):
+        # Divide list into sublists
+        size = math.ceil(len(mylist)/n)
+        sublists = [mylist[i*size:(i*size) + size] for i in range(n)]
+        return sublists
+
+    else:
+        return [mylist]
 
 
 # ----------------------------------------------------------
@@ -39,12 +38,17 @@ def split_list(mylist, n=2):
 def split_dict(mydict, n=2):
     'Splits mydict into n pieces.'
     
-    i = itertools.cycle(range(n))       
-    split = [dict() for _ in range(n)]
-    for k, v in mydict.items():
-        split[next(i)][k] = v
-        
-    return split
+    if n < len(mydict):
+        i = itertools.cycle(range(n))       
+        split = [dict() for _ in range(n)]
+        for k, v in mydict.items():
+            split[next(i)][k] = v
+        if {} in split:
+            split.remove({})
+        return split
+
+    else:
+        return [mydict]
 
 
 # ----------------------------------------------------------
@@ -58,13 +62,16 @@ def chunk_dict(mydict, n=5):
 # ----------------------------------------------------------
 
 def split_dataframe(df, n=4):
-    'Splits df into n+1 dataframes.'
+    'Splits dataframe into n+1 dataframes.'
     
-    size = math.trunc(df.shape[0] / n)
-    dfs = [df[i*size: ((i+1)*size)-1] for i in range(n-1)]
-    dfs.append(df[(n-1)*size:])
-    
-    return dfs
+    if n < df.shape[0]:
+        size = math.trunc(df.shape[0] / n)
+        dfs = [df[i*size: ((i+1)*size)-1] for i in range(n-1)]
+        dfs.append(df[(n-1)*size:])
+        return dfs
+
+    else:
+        return [df]
 
 
 # -------------------------------------------------------------------
@@ -249,14 +256,6 @@ def save_dict(data, filename, pprint=True):
 # --------------------------------------------------------------
 # Split Dataframe
 # --------------------------------------------------------------
-
-def split_dataframe(df, n):
-    size = math.trunc(df.shape[0] / n)
-    print(f'Size: {size}')
-    dfs = [df.loc[i*size: ((i+1)*size)-1] for i in range(n-1)]
-    dfs.append(df.loc[(n-1)*size:])
-    return dfs
-
 
 def count_class_instances(df, ccol='class'):
     'Count total number of instances of each class'

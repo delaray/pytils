@@ -47,6 +47,10 @@ import pdfreader
 from pdfreader import PDFDocument, SimplePDFViewer
 
 
+# Pytils Imports
+from utils.data import split_list
+
+
 # ********************************************************************************
 # Part 1: Loading PDF Files
 # ********************************************************************************
@@ -319,14 +323,54 @@ def parse_document(path, include_content=True):
 # Chunking
 # ********************************************************************
 
-def chunk_paragraph(text: str, delim='. ') -> str:
-    sentences = text.split(delim)
-    return sentences
+def chunk_paragraph(text: str, chunk_count=None, chunk_size=1,
+                    delim='. ') -> str:
+    'Split into< chunk_count> chunks or <chunk_size> sentences per chunk.'
+    
+    if chunk_count is not None:
+        partitions = split_list(sentences, chunk_count)
+        # Concatenate the sentences in each partition.
+        chunks = [delim.join(partition) for partition in partitions]
+        
+    else:
+        # Compute quotient and remainder of sentences per chunk (spc)
+        count = len(sentences) // chunk_size
+        remainder = len(sentences) % chunk_size
+    
+        # Partition into <count> chunks of <chunk_size> sentences per chunk
+        chunks = [sentences[chunk_size*i:chunk_size*(i+1)] for i in range(count)]
+    
+        # Add the last remaining chunk
+        chunks.append(sentences[-remainder:])
+    
+        # Concatenate the sentences in each chunk.
+        chunks = [delim.join(chunk) for chunk in chunks]
+    
+    return chunks
 
 
-def chunk_paragraphs(texts: list, delim='. ') -> list:
-    sentences = [chunk_paragraph(text, delim=delim) for text in texts]
-    return list(chain(*sentences))
+# --------------------------------------------------------------------------
+
+def chunk_paragraphs(texts: list, chunk_count=None, chunk_size=None,
+                     delim='. ') -> list:
+    'Splits texts into a list of strings using chunk_count or chunk_size.'
+
+    if chunk_count is not None:
+        # Convert into a single paragraph
+        text = delim.join(texts)
+        # Chunk into <chunk_count> chunks
+        chunks = chunk_paragraph(text, chunk_count=chunk_count, delim=delim)
+        chunks = [delim.join(chunk) for chunk in chunks]
+        # Return list of strings
+        return chunks
+    
+    else:
+        # Each pargraph contains chunks <chunk_size> sentences)
+        chunks = [chunk_paragraph(text, spc=spc, delim=delim)
+                  for text in texts]
+        # Return list of strings
+        return list(chain(*chunks))
+
 
 # *********************************************************************
 # End of File
