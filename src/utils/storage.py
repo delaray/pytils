@@ -92,7 +92,7 @@ def table_exists(client, table_id, dataset_id=DATASET_ID):
 # --------------------------------------------------------------
 
 def run_bq_query(query, client=None):
-    'Runs a qury on Google Big Query and returns the results.'
+    'Runs a query on Google Big Query and returns the results.'
 
     client = bigquery.Client(project=PROJECT_ID) if client is None else client
     query_job = client.query(query)

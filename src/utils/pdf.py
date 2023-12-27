@@ -297,6 +297,7 @@ def parse_document(path, include_content=True):
             updated_date =  convert_pdf_date(metadata['/ModDate'])
             updated = datetime(*updated_date)
             year = published_date[0]
+            month = publisged_date[1]
         except Exception as err:
             print(f'\nError parsing document metadata:{path}\n{err}\n')
             published, updated, year = None, None, 0
@@ -313,6 +314,7 @@ def parse_document(path, include_content=True):
         return {'title': title,
                 'authors': authors,
                 'parseed_authors': authors,
+                'month': month,
                 'year' : year,
                 'published': published,
                 'updated': updated,
