@@ -465,11 +465,11 @@ def download_data_blob(model_name, file_pathname, storage=GCP_STORAGE,
                        bucket=GCP_BUCKET, folder=None):
     'Downloads a data blob from the named model.'
 
-    logger.warning(f'\nBucket: {bucket}\nStorage: {storage}\nFolder: {folder}\n)')
+    # logger.warning(f'\nBucket: {bucket}\nStorage: {storage}\nFolder: {folder}\n)')
     blob_path = data_directory_gs(model_name, bucket=bucket, storage=storage,
                                   folder=folder)
 
-    logger.warning(f'\nBlob path: {blob_path}\nFile pathname: {file_pathname}\n')
+    # logger.warning(f'\nBlob path: {blob_path}\nFile pathname: {file_pathname}\n')
     blob_pathname = blob_path + os.path.basename(file_pathname)
 
     download_blob(blob_pathname, file_pathname, model_name, folder=folder)
@@ -568,7 +568,7 @@ def save_data_fs(model_name, data_name, data_type, data, folder=None):
     pathname = data_type_pathname(model_name, data_name, data_type,
                                   folder=folder)
 
-    logger.warning(f'\nSaving to local filesystem:\nPathname: {pathname}\n')
+    # logger.warning(f'\nSaving to local filesystem:\nPathname: {pathname}\n')
           
     if data_type == 'csv':
         save_csv(data, pathname)
@@ -608,7 +608,7 @@ def save_data_bq(model_name, data_name, tdf, project, dataset):
 
     if project is not None and dataset is not None:
         table_name = f'{model_name}-{data_name}'
-        logger.warning(f'\nProject: {project}\nDataset: {dataset}\nTable: {table_name}\n')
+        # logger.warning(f'\nProject: {project}\nDataset: {dataset}\nTable: {table_name}\n')
         table_to_bq(tdf, project=project, dataset=dataset, table_name=table_name)
         return True
     else:
@@ -649,7 +649,7 @@ def load_data_fs(model_name, data_name, data_type, folder=None):
 
     pathname = data_type_pathname(model_name, data_name, data_type, folder=folder)
 
-    logger.warning(f'\nLoading from local filesystem:\nPathname: {pathname}\n')
+    # logger.warning(f'\nLoading from local filesystem:\nPathname: {pathname}\n')
     if data_type == 'csv':
         return load_csv(pathname)
     
@@ -993,6 +993,7 @@ def list_files_in_folder(folder_url, json_key_file=AUTH_FILE):
 
     if not files:
         logger.warning('No files found.')
+        
     else:
         logger.warning('Files:')
         for file in files:
