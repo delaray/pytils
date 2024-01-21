@@ -47,7 +47,8 @@ def get_url_response(url, headers=REQUEST_HEADERS, params={}):
     'Returns a response object or None'
     
     try:
-        return requests.get(url, headers=headers, params=params)
+        return requests.get(url, headers=headers, allow_redirects=True,
+                            params=params)
     except Exception:
         return None
 
@@ -209,6 +210,7 @@ def is_valid_url(url):
 
 def pure_url(url):
     'Removes the parameters of url'
+    url = unquote(url)
     return url[:url.index("?")] if "?" in url else url
 
 # -------------------------------------------------------------------
