@@ -201,7 +201,7 @@ def get_hotmail_messages(sender_email, user=HOTMAIL_USER, pwd=HOTMAIL_PWD,
     if account is not None:
         # Try a few times to avoid occasional TokenExpiredError due
         # to value computed before the lock was acquired.
-        for i in range(reties):
+        for i in range(retries):
             success = True
             try:
                 folder = account.inbox
