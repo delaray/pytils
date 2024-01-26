@@ -40,6 +40,13 @@ REQUEST_HEADERS = {'User-Agent': 'Chrome/83.0.4103.97',
 
 
 # --------------------------------------------------------------------
+
+def follow_url(url: str) -> str:
+    url =  requests.head(url, allow_redirects=True).url
+    return url
+    
+
+# --------------------------------------------------------------------
 # URL Response and Data
 # --------------------------------------------------------------------
 

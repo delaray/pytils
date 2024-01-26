@@ -139,33 +139,69 @@ def get_emails_from_sender(sender_email, user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
 # Get  Hotmail Account
 # -----------------------------------------------------------------
 
+# from exchangelib import (
+#     Account,
+#     Configuration,
+#     OAuth2Credentials,
+#     DELEGATE,
+#     OAUTH2,
+# )
+# from os import environ
+
+# username = environ["USERNAME"]
+# client_id = environ["CLIENT_ID"]
+# tenant_id = environ["TENANT_ID"]
+# secret_value = environ["VALUE"]
+
+# credentials = OAuth2Credentials(
+#     client_id=client_id, tenant_id=tenant_id, client_secret=secret_value
+# )
+# conf = Configuration(
+#     credentials=credentials, server="outlook.office365.com", auth_type=OAUTH2
+# )
+# account = Account(
+#     primary_smtp_address=username,
+#     autodiscover=False,
+#     config=conf,
+#     access_type=DELEGATE,
+# )
+
 def get_hotmail_account(user=HOTMAIL_USER, pwd=HOTMAIL_PWD,
-                        server=HOTMAIL_SERVER):
-    try:
-        user_email = f'{user}@hotmail.com'
-        credentials = Credentials(user_email, pwd)
-        config = Configuration(server=server, credentials=credentials)
-        account = Account(primary_smtp_address=user_email,
-                          config=config,
-                          autodiscover=False,
-                          access_type=DELEGATE)
-        return account
-    except Exception as err:
-        print(f'\nError getting Hotmail account.\n{err}\n')
-        return None
+                        server=HOTMAIL_SERVER, retries=3):
+    'Returns an exchangelib account object for the specified user and pwd.'
+    
+    for i in range(retries):
+        success = True
+        try:
+            user_email = f'{user}@hotmail.com'
+            credentials = Credentials(user_email, pwd)
+        
+            config = Configuration(server=server, credentials=credentials)
+        
+            account = Account(primary_smtp_address=user_email,
+                              config=config,
+                              autodiscover=False,
+                              access_type=DELEGATE)
+            return account
+        except Exception as err:
+            print(f'\nError getting Hotmail account.\n{err}\n')
+            success = False
+        
+    print(f'Error retrieving Hotmail account after {retries}\n')
 
 # -----------------------------------------------------------------
 # Get  Hotmail Messages
 # -----------------------------------------------------------------
 
-def get_hotmail_messages(sender_email, user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
+def get_hotmail_messages(sender_email, user=HOTMAIL_USER, pwd=HOTMAIL_PWD,
+                         retries=3):
     
-    account = get_hotmail_account(user=user, pwd=pwd)
+    account = get_hotmail_account(user=user, pwd=pwd, retries=retries)
 
     if account is not None:
         # Try a few times to avoid occasional TokenExpiredError due
         # to value computed before the lock was acquired.
-        for i in range(3):
+        for i in range(reties):
             success = True
             try:
                 folder = account.inbox
@@ -177,6 +213,7 @@ def get_hotmail_messages(sender_email, user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
                 success = False
         print(f'Error retrieving Hotmail messages for {sender_email}\n')
         return None
+    
     else:
         return None
 
