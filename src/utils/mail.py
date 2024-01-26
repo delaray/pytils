@@ -184,7 +184,7 @@ def get_hotmail_account(user=HOTMAIL_USER, pwd=HOTMAIL_PWD,
                               access_type=DELEGATE)
             return account
         except Exception as err:
-            print(f'\nError getting Hotmail account.\n{err}\n')
+            print(f'Attempt {i+1}: Error getting Hotmail account. {err}')
             success = False
         
     print(f'Error retrieving Hotmail account after {retries}\n')
