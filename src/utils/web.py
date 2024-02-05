@@ -42,8 +42,8 @@ REQUEST_HEADERS = {'User-Agent': 'Chrome/83.0.4103.97',
 # --------------------------------------------------------------------
 
 def follow_url(url: str) -> str:
-    url =  requests.head(url, allow_redirects=True).url
-    return url
+    resp = get_url_response(url)
+    return resp.url if resp is not None else url
     
 
 # --------------------------------------------------------------------
@@ -58,6 +58,7 @@ def get_url_response(url, headers=REQUEST_HEADERS, params={}):
                             params=params)
     except Exception:
         return None
+
 
 # --------------------------------------------------------------------
 
