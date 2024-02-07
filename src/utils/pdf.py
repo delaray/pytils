@@ -306,6 +306,7 @@ def parse_document(path, include_content=True):
         pages = reader.pages
         title = parse_title(pages[0])
         authors = parse_authors(pages[0])
+        abstract = parse_abstract(pages[0])
         if include_content is True:
             content = list(map(lambda page: page.extract_text(), pages))
         else:
@@ -318,6 +319,7 @@ def parse_document(path, include_content=True):
                 'year' : year,
                 'published': published,
                 'updated': updated,
+                'abstract': abstract,
                 'content': content}
 
 
