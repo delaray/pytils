@@ -192,7 +192,10 @@ def parse_abstract(page):
     text = page.extract_text()
     lines = text.split('\n')
     start = lines.index('Abstract') + 1
-    end = lines.index('.\n1 Introduction')
+    if 'Introduction' in lines[start:]:
+        end = lines.index('.\n1 Introduction')
+    else:
+        end = lines[start:].index('\n') + start
     lines = join_lines(lines[start: end])
     return lines
 
