@@ -195,7 +195,7 @@ def parse_abstract(page):
     if 'Introduction' in lines[start:]:
         end = lines.index('.\n1 Introduction')
     else:
-        end = lines[start:].index('\n') + start
+        end = -1
     lines = join_lines(lines[start: end])
     return lines
 
