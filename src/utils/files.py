@@ -32,7 +32,7 @@ from time import time
 
 
 # ----------------------------------------------------------------------
-# Generic File Tools
+# Generic File Operations
 # ----------------------------------------------------------------------
 
 def files_in_dir(dir, filter=''):
@@ -40,9 +40,16 @@ def files_in_dir(dir, filter=''):
     return [f for f in files if filter in f]
 
 
+# ----------------------------------------------------------------------
+
 def file_exists(filename):
     return os.path.exists(filename)
 
+# ----------------------------------------------------------------------
+
+def delete_file(pathname):
+    os.remove(file)
+    return True
 
 # ----------------------------------------------------------------------
 # Load and save text files as strings
