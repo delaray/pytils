@@ -40,16 +40,17 @@ import pandas as pd
 from unidecode import unidecode
 from datetime import datetime
 from itertools import chain
+from typing import Union
 
 # from pypdf import PdfReader
 from PyPDF2 import PdfReader
+from PyPDF2._page import PageObject
 import pdfreader
 from pdfreader import PDFDocument, SimplePDFViewer
 
 
 # Pytils Imports
 from utils.data import split_list
-
 
 # ********************************************************************************
 # Part 1: Loading PDF Files
@@ -145,7 +146,7 @@ def extract_information(pdf_path):
 # Ignore Footers and Headers
 # --------------------------------------------------------------------------
 
-def ignore_header_and_footer(page):
+def ignore_header_and_footer(page: PageObject):
 
     parts = []
     
@@ -182,13 +183,13 @@ def join_lines(lines):
 # Parse Abstract
 # --------------------------------------------------------------------------
 
-def parse_title(page):
+def parse_title(page: PageObject):
     text = page.extract_text()
     return text.split('\n')[0]
     
 # --------------------------------------------------------------------------
 
-def parse_abstract(page):
+def parse_abstract(page: PageObject):
     text = page.extract_text()
     lines = text.split('\n')
     start = lines.index('Abstract') + 1
@@ -199,7 +200,10 @@ def parse_abstract(page):
     lines = join_lines(lines[start: end])
     return lines
 
+
 # --------------------------------------------------------------------------
+
+EMAIL_PATTERN = '^([a-zA-Z0-9_\-\.]+)@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{2,5})$'
 
 def is_valid_email(email: str) -> bool:
     try:
@@ -208,21 +212,16 @@ def is_valid_email(email: str) -> bool:
         return False
 
     # Define a pattern for a well-structured email address
-    pattern = r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)"
+    pattern =  EMAIL_PATTERN
 
-    if re.match(pattern, email):
-        return True
-    else:
-        return False
+    return True if re.match(pattern, email) else False
 
 
 # --------------------------------------------------------------------------
 
-EMAIL_PATTERN = '^([a-zA-Z0-9_\-\.]+)@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{2,5})$'
-
 # TODO: Make author extraction more robust:
 
-def parse_authors(page):
+def parse_authors(page: PageObject):
     text = page.extract_text()
     if 'Abstract' in text:
         
@@ -284,10 +283,13 @@ def convert_pdf_date(date):
 
 
 # --------------------------------------------------------------------------
+# Parse Document
+# --------------------------------------------------------------------------
 
 # Convert PDF Date format to datetime D:YYYYMMDDHHmmSSdef parse_document(pathname):
 
 def parse_document(path, include_content=True):
+    "Parses PDF document attempting to extract relevant fields."
 
     with open(path, 'rb') as f:
         reader = PdfReader(f)
@@ -324,6 +326,43 @@ def parse_document(path, include_content=True):
                 'updated': updated,
                 'abstract': abstract,
                 'content': content}
+
+
+# --------------------------------------------------------------------------
+# Extract Document Content
+# --------------------------------------------------------------------------
+   
+def extract_document_content(path: str) -> Union[list[str]|None]:
+    "Returns the list of document pages as strings."
+    
+    try:
+        with open(path, 'rb') as f:
+            reader = PdfReader(f)
+            pages = reader.pages
+            content = list(map(lambda page: page.extract_text(), pages))
+            return content
+        
+    except Exception as err:
+        print(f'\nError extracting document content from:\n{path}\n{err}\n')
+        return None
+                    
+# --------------------------------------------------------------------------
+# Extract Document Paragraphs
+# --------------------------------------------------------------------------
+   
+def extract_document_paragraphs(path: str) -> Union[list[list]| list]:
+    "Returns the list of document paragraphs as strings with pages numbers."
+
+    content = extract_document_content(path)
+    results = []
+    if content:
+        for index, text in enumerate(content):
+            paragraphs = text.split(".\n")
+            paragraphs = [p.replace('\n', ' ') for p in paragraphs]
+            entries = [[p, index] for p in paragraphs]
+            results.extend(entries)
+
+    return results
 
 
 # *********************************************************************
