@@ -283,6 +283,51 @@ def convert_pdf_date(date):
 
 
 # --------------------------------------------------------------------------
+# Extract Document Content
+# --------------------------------------------------------------------------
+   
+def _extract_document_content(reader) -> Union[list[str]|None]:
+    "Returns the list of document pages as strings."
+    
+    try:
+        pages = reader.pages
+        content = list(map(lambda page: page.extract_text(), pages))
+        return content
+        
+    except Exception as err:
+        print(f'\nError extracting document content from:\n{path}\n{err}\n')
+        return None
+
+# --------------------------------------------------------------------------
+   
+def extract_document_content(path: str) -> Union[list[str]|None]:
+    "Returns the list of document pages as strings."
+    
+    with open(path, 'rb') as f:
+        reader = PdfReader(f)
+        return _extract_document_content(reader)
+    
+# --------------------------------------------------------------------------
+# Extract Document Paragraphs
+# --------------------------------------------------------------------------
+
+
+def extract_document_paragraphs(path: str) -> Union[list[list]| list]:
+    "Returns the list of document paragraphs as strings with pages numbers."
+
+    content = extract_document_content(path)
+    results = []
+    if content:
+        for index, text in enumerate(content):
+            paragraphs = text.split(".\n")
+            paragraphs = [p.replace('\n', ' ') for p in paragraphs]
+            entries = [[p, index] for p in paragraphs]
+            results.extend(entries)
+
+    return results
+
+
+# --------------------------------------------------------------------------
 # Parse Document
 # --------------------------------------------------------------------------
 
@@ -312,8 +357,8 @@ def parse_document(path, include_content=True):
         title = parse_title(pages[0])
         authors = parse_authors(pages[0])
         abstract = parse_abstract(pages[0])
-        if include_content is True:
-            content = list(map(lambda page: page.extract_text(), pages))
+        if include_content:
+            content = _extract_document_content(reader)
         else:
             content = None
         
@@ -326,43 +371,6 @@ def parse_document(path, include_content=True):
                 'updated': updated,
                 'abstract': abstract,
                 'content': content}
-
-
-# --------------------------------------------------------------------------
-# Extract Document Content
-# --------------------------------------------------------------------------
-   
-def extract_document_content(path: str) -> Union[list[str]|None]:
-    "Returns the list of document pages as strings."
-    
-    try:
-        with open(path, 'rb') as f:
-            reader = PdfReader(f)
-            pages = reader.pages
-            content = list(map(lambda page: page.extract_text(), pages))
-            return content
-        
-    except Exception as err:
-        print(f'\nError extracting document content from:\n{path}\n{err}\n')
-        return None
-                    
-# --------------------------------------------------------------------------
-# Extract Document Paragraphs
-# --------------------------------------------------------------------------
-   
-def extract_document_paragraphs(path: str) -> Union[list[list]| list]:
-    "Returns the list of document paragraphs as strings with pages numbers."
-
-    content = extract_document_content(path)
-    results = []
-    if content:
-        for index, text in enumerate(content):
-            paragraphs = text.split(".\n")
-            paragraphs = [p.replace('\n', ' ') for p in paragraphs]
-            entries = [[p, index] for p in paragraphs]
-            results.extend(entries)
-
-    return results
 
 
 # *********************************************************************
