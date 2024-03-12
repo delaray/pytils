@@ -283,10 +283,10 @@ def convert_pdf_date(date):
 
 
 # --------------------------------------------------------------------------
-# Extract Document Content
+# Document Content
 # --------------------------------------------------------------------------
    
-def _extract_document_content(reader) -> Union[list[str]|None]:
+def _get_document_content(reader) -> Union[list[str]|None]:
     "Returns the list of document pages as strings."
     
     try:
@@ -298,9 +298,10 @@ def _extract_document_content(reader) -> Union[list[str]|None]:
         print(f'\nError extracting document content from:\n{path}\n{err}\n')
         return None
 
+
 # --------------------------------------------------------------------------
    
-def extract_document_content(path: str) -> Union[list[str]|None]:
+def get_document_content(path: str) -> Union[list[str]|None]:
     "Returns the list of document pages as strings."
     
     with open(path, 'rb') as f:
@@ -308,11 +309,10 @@ def extract_document_content(path: str) -> Union[list[str]|None]:
         return _extract_document_content(reader)
     
 # --------------------------------------------------------------------------
-# Extract Document Paragraphs
+# Document Paragraphs
 # --------------------------------------------------------------------------
 
-
-def extract_document_paragraphs(path: str) -> Union[list[list]| list]:
+def get_document_paragraphs(path: str) -> Union[list[list]| list]:
     "Returns the list of document paragraphs as strings with pages numbers."
 
     content = extract_document_content(path)
@@ -328,12 +328,12 @@ def extract_document_paragraphs(path: str) -> Union[list[list]| list]:
 
 
 # --------------------------------------------------------------------------
-# Parse Document
+# Document Metadata
 # --------------------------------------------------------------------------
 
 # Convert PDF Date format to datetime D:YYYYMMDDHHmmSSdef parse_document(pathname):
 
-def parse_document(path, include_content=True):
+def get_document_metadata(path, include_content=True):
     "Parses PDF document attempting to extract relevant fields."
 
     with open(path, 'rb') as f:
@@ -357,8 +357,9 @@ def parse_document(path, include_content=True):
         title = parse_title(pages[0])
         authors = parse_authors(pages[0])
         abstract = parse_abstract(pages[0])
+        
         if include_content:
-            content = _extract_document_content(reader)
+            content = _get_document_content(reader)
         else:
             content = None
         
