@@ -316,12 +316,13 @@ def get_document_paragraphs(path: str) -> Union[list[list]| list]:
     "Returns the list of document paragraphs as strings with pages numbers."
 
     content = extract_document_content(path)
+    pages = len(content)
     results = []
     if content:
         for index, text in enumerate(content):
             paragraphs = text.split(".\n")
             paragraphs = [p.replace('\n', ' ') for p in paragraphs]
-            entries = [[p, index] for p in paragraphs]
+            entries = [[p, pages, index] for p in paragraphs]
             results.extend(entries)
 
     return results
@@ -378,9 +379,9 @@ def get_document_metadata(path, include_content=True):
 # Chunking
 # ********************************************************************
 
-def chunk_paragraph(text: str, chunk_count=None, chunk_size=1,
+def chunk_paragraph(sentences: str, chunk_count=None, chunk_size=1,
                     delim='. ') -> str:
-    'Split into< chunk_count> chunks or <chunk_size> sentences per chunk.'
+    'Split sentences into <chunk_count> chunks or <chunk_size> sentences per chunk.'
     
     if chunk_count is not None:
         partitions = split_list(sentences, chunk_count)
