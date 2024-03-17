@@ -312,21 +312,36 @@ def get_document_content(path: str) -> Union[list[str]|None]:
 # Document Paragraphs
 # --------------------------------------------------------------------------
 
-def get_document_paragraphs(path: str) -> Union[list[list]| list]:
-    "Returns the list of document paragraphs as strings with pages numbers."
+def get_paragraphs(text: str) -> list[str]:
+    "Returns the list of paragraphs in text as strings."
 
-    content = extract_document_content(path)
-    pages = len(content)
+    paragraphs = text.split(".\n")
+    paragraphs = [text.replace('\n', ' ') for text in paragraphs]
+    return paragraphs
+
+
+# --------------------------------------------------------------------------
+
+def get_paragraphs_from_content(content: str) -> Union[list[list]| list]:
+    "Returns the list of document paragraph entries with page count and page number."
+
+    page_count = len(content)
     results = []
+    
     if content:
         for index, text in enumerate(content):
-            paragraphs = text.split(".\n")
-            paragraphs = [p.replace('\n', ' ') for p in paragraphs]
-            entries = [[p, pages, index] for p in paragraphs]
+            paragraphs = get_paragraphs(text)
+            entries = [[paragraph, page_count, index] for paragraph in paragraphs]
             results.extend(entries)
 
     return results
 
+
+# --------------------------------------------------------------------------
+
+def get_document_paragraphs(path: str) -> Union[list[list]| list]:
+    content = extract_document_content(path)
+    return get_paragraphs_from_content(content)
 
 # --------------------------------------------------------------------------
 # Document Metadata
