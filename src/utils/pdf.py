@@ -306,7 +306,7 @@ def get_document_content(path: str) -> Union[list[str]|None]:
     
     with open(path, 'rb') as f:
         reader = PdfReader(f)
-        return _extract_document_content(reader)
+        return _get_document_content(reader)
     
 # --------------------------------------------------------------------------
 # Document Paragraphs
@@ -322,7 +322,7 @@ def get_paragraphs(text: str) -> list[str]:
 
 # --------------------------------------------------------------------------
 
-def get_paragraphs_from_content(content: str) -> Union[list[list] | list]:
+def get_paragraphs_from_content(content: list[str]) -> Union[list[list] | list]:
     "Returns the list of document paragraph entries with page count and page number."
 
     page_count = len(content)
@@ -342,6 +342,7 @@ def get_paragraphs_from_content(content: str) -> Union[list[list] | list]:
 def get_document_paragraphs(path: str) -> Union[list[list] | list]:
     content = get_document_content(path)
     return get_paragraphs_from_content(content)
+
 
 # --------------------------------------------------------------------------
 # Document Metadata
