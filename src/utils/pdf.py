@@ -298,10 +298,10 @@ def _extract_text(page):
 def _get_document_content(reader) -> Union[list[str]|None]:
     "Returns the list of document pages as strings."
 
-        pages = reader.pages
-        content = list(map(lambda page: _extract_text(page), pages))
-        content = [x for x in content if x is not None]
-        return content
+    pages = reader.pages
+    content = list(map(lambda page: _extract_text(page), pages))
+    content = [x for x in content if x is not None]
+    return content
         
 # --------------------------------------------------------------------------
    
