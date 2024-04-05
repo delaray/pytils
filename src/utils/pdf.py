@@ -285,20 +285,24 @@ def convert_pdf_date(date):
 # --------------------------------------------------------------------------
 # Document Content
 # --------------------------------------------------------------------------
-   
+
+def _extract_text(page):
+    try:
+        return = page.extract_text()
+    except Exception as err:
+        return None
+           
+
+# --------------------------------------------------------------------------
+
 def _get_document_content(reader) -> Union[list[str]|None]:
     "Returns the list of document pages as strings."
-    
-    try:
+
         pages = reader.pages
-        content = list(map(lambda page: page.extract_text(), pages))
+        content = list(map(lambda page: _extract_text(page), pages))
+        content = [x for x in content if x is not None]
         return content
         
-    except Exception as err:
-        print(f'\nError extracting document content from:\n{path}\n{err}\n')
-        return None
-
-
 # --------------------------------------------------------------------------
    
 def get_document_content(path: str) -> Union[list[str]|None]:

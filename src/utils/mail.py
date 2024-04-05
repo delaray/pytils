@@ -223,7 +223,7 @@ def get_hotmail_messages(sender_email, user=HOTMAIL_USER, pwd=HOTMAIL_PWD,
 # -----------------------------------------------------------------
 
 def get_processed_mail_folder(account):
-    return account.root/'Top of Information Store'/'Aiscape'/'Processed'
+    return account.root//'Top of Information Store'//'Aiscape'//'Processed'
 
 
 # -----------------------------------------------------------------
