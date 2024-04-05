@@ -288,7 +288,7 @@ def convert_pdf_date(date):
 
 def _extract_text(page):
     try:
-        return = page.extract_text()
+        return  page.extract_text()
     except Exception as err:
         return None
            
