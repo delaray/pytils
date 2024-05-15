@@ -21,9 +21,6 @@ from bs4 import BeautifulSoup
 from urllib.parse import urlparse, quote, unquote
 from selenium import webdriver
 
-from utils.nlp import tokenize_text
-
-
 # --------------------------------------------------------------------
 
 CHROME_OPTIONS = None
@@ -290,14 +287,6 @@ def extract_internal_urls(url, root_url, filter='', stop_words=[]):
 
 # -------------------------------------------------------------------
 
-# Defined for convenience. Tokenizes then the reasembles.
-
-def clean_sentence(s):
-    tokens = tokenize_text(s)
-    return ' '.join(tokens)
-
-# -------------------------------------------------------------------
-
 def extract_text(url):
     content = get_url_data(url)
     text = []
@@ -308,14 +297,6 @@ def extract_text(url):
         text = [unquote(x)  for x in text if len(x) > 2]
     return text
 
-# -------------------------------------------------------------------
-
-CHROME_OPTIONS
-def extract_clean_text (url):
-    text = extract_text(url)
-    clean = [clean_sentence(x) for x in text]
-    filtered = [x for x in clean if len(x.split(' ')) > 1]
-    return filtered
 
 # **********************************************************************
 # End of File
