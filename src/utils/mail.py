@@ -139,6 +139,33 @@ def get_emails_from_sender(sender_email, user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
 # Get  Hotmail Account
 # -----------------------------------------------------------------
 
+def get_hotmail_account(user=HOTMAIL_USER, pwd=HOTMAIL_PWD,
+                        server=HOTMAIL_SERVER, retries=3):
+    'Returns an exchangelib account object for the specified user and pwd.'
+    
+    for i in range(retries):
+        success = True
+        try:
+            user_email = f'{user}@hotmail.com'
+            credentials = Credentials(user_email, pwd)
+        
+            config = Configuration(server=server, credentials=credentials,
+                                   verify_ssl=False)
+        
+            account = Account(primary_smtp_address=user_email,
+                              credentials=credentials,
+                              # config=config,
+                              autodiscover=False,
+                              access_type=DELEGATE)
+            return account
+        except Exception as err:
+            print(f'Attempt {i+1}: Error getting Hotmail account. {err}')
+            success = False
+        
+    print(f'Error retrieving Hotmail account after {retries}\n')
+
+# -----------------------------------------------------------------
+
 # from exchangelib import (
 #     Account,
 #     Configuration,
@@ -165,30 +192,6 @@ def get_emails_from_sender(sender_email, user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
 #     config=conf,
 #     access_type=DELEGATE,
 # )
-
-def get_hotmail_account(user=HOTMAIL_USER, pwd=HOTMAIL_PWD,
-                        server=HOTMAIL_SERVER, retries=3):
-    'Returns an exchangelib account object for the specified user and pwd.'
-    
-    for i in range(retries):
-        success = True
-        try:
-            user_email = f'{user}@hotmail.com'
-            credentials = Credentials(user_email, pwd)
-        
-            config = Configuration(server=server, credentials=credentials,
-                                   verify_ssl=False)
-        
-            account = Account(primary_smtp_address=user_email,
-                              config=config,
-                              autodiscover=False,
-                              access_type=DELEGATE)
-            return account
-        except Exception as err:
-            print(f'Attempt {i+1}: Error getting Hotmail account. {err}')
-            success = False
-        
-    print(f'Error retrieving Hotmail account after {retries}\n')
 
 # -----------------------------------------------------------------
 # Get  Hotmail Messages
