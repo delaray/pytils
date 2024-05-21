@@ -153,8 +153,7 @@ def get_hotmail_account(user=HOTMAIL_USER, pwd=HOTMAIL_PWD,
                                    verify_ssl=False)
         
             account = Account(primary_smtp_address=user_email,
-                              credentials=credentials,
-                              # config=config,
+                              config=config,
                               autodiscover=False,
                               access_type=DELEGATE)
             return account
