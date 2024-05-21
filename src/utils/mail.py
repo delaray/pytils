@@ -149,8 +149,7 @@ def get_hotmail_account(user=HOTMAIL_USER, pwd=HOTMAIL_PWD,
             user_email = f'{user}@hotmail.com'
             credentials = Credentials(user_email, pwd)
         
-            config = Configuration(server=server, credentials=credentials,
-                                   verify_ssl=False)
+            config = Configuration(server=server, credentials=credentials)
         
             account = Account(primary_smtp_address=user_email,
                               config=config,
