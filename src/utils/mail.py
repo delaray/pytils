@@ -21,7 +21,7 @@ HOTMAIL_SERVER = "outlook.office365.com"
 # -----------------------------------------------------------------
 
 GMAIL_EMAIL = "raymond.delacaze@gmail.com"
-GMAIL_PWD = os.environ.get('GMAIL_PWD', 'XXXXX') 
+GMAIL_PWD = os.environ.get('GMAIL_PWD', 'XXXXX')
 GMAIL_SMTP_SERVER = "smtp.gmail.com"
 GMAIL_SMTP_PORT = 465
 
@@ -34,7 +34,7 @@ def send_email(receiver_email, subject, content,
                sender_email=GMAIL_EMAIL,
                sender_pwd=GMAIL_PWD):
      # For SSL
-    port = GMAIL_OUTGOING_PORT 
+    port = GMAIL_OUTGOING_PORT
     smtp_server = GMAIL_SMTP_SERVER
 
 
@@ -47,7 +47,7 @@ def send_email(receiver_email, subject, content,
     message.attach(part1)
 
     context = ssl.create_default_context()
-    
+
     try:
         with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
             server.login(sender_email, sender_pwd)
@@ -57,8 +57,8 @@ def send_email(receiver_email, subject, content,
         print("Unable to send mail: " + str(e))
         return False
 
-    
-# sender_email = "babar.system@gmail.com"  
+
+# sender_email = "babar.system@gmail.com"
 
 # ********************************************************************************
 # Part 2: Retrieving Emails
@@ -76,7 +76,7 @@ def send_email(receiver_email, subject, content,
 
 def get_emails_from_sender(sender_email, user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
     email = f'{user}@hotmail.com'
-    
+
     # Set up the IMAP client
     imap = imaplib.IMAP4_SSL("outlook.office365.com")
     imap_port = 993
@@ -142,24 +142,26 @@ def get_emails_from_sender(sender_email, user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
 def get_hotmail_account(user=HOTMAIL_USER, pwd=HOTMAIL_PWD,
                         server=HOTMAIL_SERVER, retries=3):
     'Returns an exchangelib account object for the specified user and pwd.'
-    
+
     for i in range(retries):
         success = True
         try:
-            user_email = f'{user}@hotmail.com'
+            user_email = 'delaray@hotmail.com'
             credentials = Credentials(user_email, pwd)
-        
+
             config = Configuration(server=server, credentials=credentials)
-        
+
             account = Account(primary_smtp_address=user_email,
+                              credentials=credentials,
                               config=config,
-                              autodiscover=False,
+                              autodiscover=True,
                               access_type=DELEGATE)
             return account
+
         except Exception as err:
             print(f'Attempt {i+1}: Error getting Hotmail account. {err}')
             success = False
-        
+
     print(f'Error retrieving Hotmail account after {retries}\n')
 
 # -----------------------------------------------------------------
@@ -197,7 +199,7 @@ def get_hotmail_account(user=HOTMAIL_USER, pwd=HOTMAIL_PWD,
 
 def get_hotmail_messages(sender_email, user=HOTMAIL_USER, pwd=HOTMAIL_PWD,
                          retries=3):
-    
+
     account = get_hotmail_account(user=user, pwd=pwd, retries=retries)
 
     if account is not None:
@@ -215,7 +217,7 @@ def get_hotmail_messages(sender_email, user=HOTMAIL_USER, pwd=HOTMAIL_PWD,
                 success = False
         print(f'Error retrieving Hotmail messages for {sender_email}\n')
         return None
-    
+
     else:
         return None
 
@@ -237,7 +239,7 @@ def move_message_to_processed(message, user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
                                   user=user, pwd=pwd)
     return status
 
-      
+
 # -----------------------------------------------------------------
 
 def move_hotmail_message(message, to_folder=None, user=HOTMAIL_USER,
@@ -250,11 +252,11 @@ def move_hotmail_message(message, to_folder=None, user=HOTMAIL_USER,
         message.move(to_folder)
         # print(f'\nSucces: Message moved to Aiscape/Processed')
         return True
-    
+
     except Exception as err:
         # print(f'\nError: Message NOT moved to Aiscape/Processed\n{err}\n')
         return False
-        
+
 
 # General Move Mail Message
 #
@@ -262,7 +264,7 @@ def move_hotmail_message(message, to_folder=None, user=HOTMAIL_USER,
 # import os
 
 # credentials = Credentials('test.name@mail.com', 'password')
-# account = Account('test.name@mail.com', credentials=credentials, 
+# account = Account('test.name@mail.com', credentials=credentials,
 # autodiscover=True)
 
 # #this will show you the account folder tree
@@ -291,13 +293,13 @@ def get_message_urls(message):
     # Define a regular expression pattern to match URLs
     url1 = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]'
     url2 = r'|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
-    
+
     url_pattern = re.compile(url1+url2)
-    
+
     # Extract URLs from the text and HTML bodies
     text_body_urls = url_pattern.findall(message.text_body or '')
     html_body_urls = url_pattern.findall(message.body or '')
-    
+
     # Combine and deduplicate the lists of URLs
     urls = list(set(text_body_urls + html_body_urls))
 
@@ -309,7 +311,7 @@ def get_message_urls(message):
             return url
 
     urls = [shorten(url) for url in urls]
-    
+
     return urls
 
 
@@ -349,7 +351,7 @@ def get_message_properties(message):
 
     sent = message.datetime_sent
     received = message.datetime_received
-    
+
     # Collect essential message properties
     result = {'id': message.id,
               'sender': message.sender,
@@ -372,9 +374,8 @@ def get_message_content(message):
               'html': message.body}
 
     return result
-    
-    
+
+
 # ****************************************************************
 # End of File
 # ****************************************************************
-

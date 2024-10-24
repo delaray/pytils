@@ -24,7 +24,7 @@ class TestData(unittest.TestCase):
         pieces1 = split_list(mylist, n=2)
         self.assertEqual(pieces1[0], [1, 2, 3])
         self.assertEqual(pieces1[1], [4, 5])
-        
+
         pieces2 = split_list(mylist, n=3)
         self.assertEqual(pieces2[0], [1, 2])
         self.assertEqual(pieces2[1], [3, 4])
@@ -51,7 +51,7 @@ class TestData(unittest.TestCase):
         pieces3 = split_dict(d, n=6)
         self.assertEqual(len(pieces3), 1)
         self.assertEqual(pieces3[0], d)
-        
+
 
     def test_split_dataframe(self):
 
@@ -66,7 +66,7 @@ class TestData(unittest.TestCase):
         self.assertEqual(len(pieces2), 1)
         self.assertEqual(list(pieces2[0].loc[0]), [1, 2])
         self.assertEqual(list(pieces2[0].loc[4]), [9, 10])
-   
+
 if __name__ == '__main__':
     unittest.main()
 

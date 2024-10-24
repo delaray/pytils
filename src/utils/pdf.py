@@ -67,7 +67,7 @@ PDF_FILE = '/education/papers/Attention-is-All-You-Need.pdf'
 # https://stackoverflow.com/questions/26494211/extracting-text-from-a-pdf-file-using-pdfminer-in-python
 #
 # Install pdfminer using: pip install git+https://github.com/pdfminer/pdfminer.six.git
-# NB1: Requires 
+# NB1: Requires
 # NB: Needed to change StringIO import statement to import from io in Python 3
 
 # Upgraded to handle exceptions of type NameError when text extraction not allowed:
@@ -88,16 +88,16 @@ def load_pdf_file(pdfname):
         laparams = LAParams()
         device = TextConverter(rsrcmgr, sio, codec=codec, laparams=laparams)
         interpreter = PDFPageInterpreter(rsrcmgr, device)
-        
+
         # Extract text
         fp = open(pdfname, 'rb')
         for page in PDFPage.get_pages(fp):
             interpreter.process_page(page)
         fp.close()
-            
+
         # Get text from StringIO
         text = sio.getvalue()
-            
+
         # Cleanup
         device.close()
         sio.close()
@@ -128,7 +128,7 @@ def extract_information(pdf_path):
         number_of_pages = len(pdf.pages)
 
     txt = f"""
-    Information about {pdf_path}: 
+    Information about {pdf_path}:
 
     Author: {information.author}
     Creator: {information.creator}
@@ -149,7 +149,7 @@ def extract_information(pdf_path):
 def ignore_header_and_footer(page: PageObject):
 
     parts = []
-    
+
     def visitor_body(text, cm, tm, fontDict, fontSize):
         y = tm[5]
         if y > 50 and y < 720:
@@ -186,7 +186,7 @@ def join_lines(lines):
 def parse_title(page: PageObject):
     text = page.extract_text()
     return text.split('\n')[0]
-    
+
 # --------------------------------------------------------------------------
 
 def parse_abstract(page: PageObject):
@@ -224,12 +224,12 @@ def is_valid_email(email: str) -> bool:
 def parse_authors(page: PageObject):
     text = page.extract_text()
     if 'Abstract' in text:
-        
+
         lines = text.split('\n')
         start = 1
         end = lines.index('Abstract')
         text = '\n'.join(lines[start: end])
-        
+
         text = text.replace('.com', '.com \n')
         text = text.replace('.edu', '.edu \n')
         text = text.replace('.org', '.org \n')
@@ -252,7 +252,7 @@ def parse_authors(page: PageObject):
                     email = company
                     company = name
                 i += 1
-                
+
             email = email.strip()
             if len(re.findall(EMAIL_PATTERN, email)) > 0:
                 name = name.replace('\u2217', '')
@@ -260,7 +260,7 @@ def parse_authors(page: PageObject):
 
             # print(f'\nParsed document authors:\n{authors}\n')
             return authors
-        
+
         except Exception as err:
             # print(f'\nError in parse_authors.\n{err}\n')
             return []
@@ -291,7 +291,7 @@ def _extract_text(page):
         return  page.extract_text()
     except Exception as err:
         return None
-           
+
 
 # --------------------------------------------------------------------------
 
@@ -302,16 +302,16 @@ def _get_document_content(reader) -> Union[list[str]|None]:
     content = list(map(lambda page: _extract_text(page), pages))
     content = [x for x in content if x is not None]
     return content
-        
+
 # --------------------------------------------------------------------------
-   
+
 def get_document_content(path: str) -> Union[list[str]|None]:
     "Returns the list of document pages as strings."
-    
+
     with open(path, 'rb') as f:
         reader = PdfReader(f)
         return _get_document_content(reader)
-    
+
 # --------------------------------------------------------------------------
 # Document Paragraphs
 # --------------------------------------------------------------------------
@@ -331,7 +331,7 @@ def get_paragraphs_from_content(content: list[str]) -> Union[list[list] | list]:
 
     page_count = len(content)
     results = []
-    
+
     if content:
         for index, text in enumerate(content):
             paragraphs = get_paragraphs(text)
@@ -378,12 +378,12 @@ def get_document_metadata(path, include_content=True):
         title = parse_title(pages[0])
         authors = parse_authors(pages[0])
         abstract = parse_abstract(pages[0])
-        
+
         if include_content:
             content = _get_document_content(reader)
         else:
             content = None
-        
+
         return {'title': title,
                 'authors': authors,
                 'parseed_authors': authors,
@@ -402,26 +402,26 @@ def get_document_metadata(path, include_content=True):
 def chunk_paragraph(sentences: str, chunk_count=None, chunk_size=1,
                     delim='. ') -> str:
     'Split sentences into <chunk_count> chunks or <chunk_size> sentences per chunk.'
-    
+
     if chunk_count is not None:
         partitions = split_list(sentences, chunk_count)
         # Concatenate the sentences in each partition.
         chunks = [delim.join(partition) for partition in partitions]
-        
+
     else:
         # Compute quotient and remainder of sentences per chunk (spc)
         count = len(sentences) // chunk_size
         remainder = len(sentences) % chunk_size
-    
+
         # Partition into <count> chunks of <chunk_size> sentences per chunk
         chunks = [sentences[chunk_size*i:chunk_size*(i+1)] for i in range(count)]
-    
+
         # Add the last remaining chunk
         chunks.append(sentences[-remainder:])
-    
+
         # Concatenate the sentences in each chunk.
         chunks = [delim.join(chunk) for chunk in chunks]
-    
+
     return chunks
 
 
@@ -439,7 +439,7 @@ def chunk_paragraphs(texts: list, chunk_count=None, chunk_size=None,
         chunks = [delim.join(chunk) for chunk in chunks]
         # Return list of strings
         return chunks
-    
+
     else:
         # Each pargraph contains chunks <chunk_size> sentences)
         chunks = [chunk_paragraph(text, spc=spc, delim=delim)

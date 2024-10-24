@@ -45,14 +45,14 @@ def init_openai(api_key=OPENAI_API_KEY, api_model=OPENAI_API_MODEL):
 
 def extract_answer(completion):
     'Returns a dictionary of essential OPENAI API completion components.'
-    
+
     answer = completion["choices"][0]["message"]["content"]
     model = completion["model"]
     usage = completion["usage"]
     prompt_tokens = usage["prompt_tokens"]
     completion_tokens = usage["completion_tokens"]
     total_tokens = usage["total_tokens"]
-    
+
     return {'response' : answer,
             'model': model,
             'total_tokens': total_tokens,
@@ -89,7 +89,7 @@ def get_openai_token_usage(bu, source='file', storage='misc',
 # --------------------------------------------------------------------------
 
 # NB: This is different from log_openai_token_usage in that the DF is
-# already constructed. 
+# already constructed.
 
 def save_openai_token_usage(bu, df, source='file', storage='misc',
                             folder='tokens'):
@@ -97,7 +97,7 @@ def save_openai_token_usage(bu, df, source='file', storage='misc',
 
     # Ensure consistent & compliant column schema
     df = df[TOKENS_USAGE_COLUMNS]
-    
+
     # Save the dataframe
     df = save_data(bu, TOKENS_USAGE_LOG, 'csv', source, df,
                    storage=storage, folder=folder)
@@ -114,10 +114,10 @@ def save_openai_token_usage(bu, df, source='file', storage='misc',
 def log_openai_token_usage(bu, user, prompt, response, source='file',
                            destination='file', storage='misc',
                            folder='tokens'):
- 
+
     # Get current token usage log
     df1 = get_openai_token_usage(bu, source, storage=storage, folder=folder)
-    
+
     # Prepare the new row
     prompt_tokens = response['prompt_tokens']
     completion_tokens = response['completion_tokens'],
@@ -148,11 +148,11 @@ def log_openai_token_usage(bu, user, prompt, response, source='file',
 def reset_openai_token_usage(bu, destination='file', storage='misc',
                              folder='tokens', initial_rows=[]):
     'Initializes or resets the OpenAI tokens usage log file.'
-    
+
     df = pd.DataFrame(initial_rows, columns=TOKENS_USAGE_COLUMNS)
     save_data(bu, TOKENS_USAGE_LOG, 'csv', df, destination=destination,
               storage=storage, folder=folder)
-    
+
     return df
 
 
@@ -200,7 +200,7 @@ def _openai_chat_complete(user, messages, model, temperature, max_tokens,
 def complete_user_prompt(user, prompt, temperature=0.8, model=OPENAI_API_MODEL,
                          max_tokens=1000, storage='misc', folder='tokens'):
     'Complete prompt using a user role in a standard chat style prompt.'
-    
+
     messages = parse_prompt(prompt)
 
     return _openai_chat_complete(user, messages, model,
@@ -269,7 +269,7 @@ def vertexai_user_prompt(prompt: str, temperature=0, max_tokens=1024):
     try:
         response = model.predict(prompt, **parameters)
         return response
-    
+
     except Exception as err:
         print(f'\nError calling VertexAI API:\n{err}\n')
         return None
@@ -279,5 +279,5 @@ def vertexai_user_prompt(prompt: str, temperature=0, max_tokens=1024):
 
 
 # **************************************************************************
-# End of File 
+# End of File
 # **************************************************************************

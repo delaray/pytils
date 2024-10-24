@@ -34,7 +34,7 @@ def set_graph_platform(platform):
     'Sets Neo4j authentication globals based on platform.'
 
     global NEO4J_URI, NEO4J_USER, NEO4J_PWD
-    
+
     if platform == "Windows" or platform == 'Darwin':
         NEO4J_URI = 'neo4j://localhost:7687'
         NEO4J_USER = 'neo4j'
@@ -98,7 +98,7 @@ def run_query(query, uri=NEO4J_URI, user=NEO4J_USER, pwd=NEO4J_PWD,
 
 def extract_nodes(result, key='n'):
     'Returns a list of objects extracted from result records with key'
-    
+
     return list(map(lambda r: r[key], result))
 
 
@@ -114,7 +114,7 @@ SERVER = 'remote'
 
 def remote_graph_p(uri, server=SERVER):
     'Return True if <uri> is a remote graph and server is not local.'
-    
+
     return not (uri == 'neo4j://localhost:7687') and not (server == 'local')
 
 
@@ -124,7 +124,7 @@ def remote_graph_p(uri, server=SERVER):
 
 def valid_result_p(result):
     'Returns True if result is non-empty.'
-    
+
     return (result is not None) and (result != [])
 
 # --------------------------------------------------------------------------
@@ -137,9 +137,9 @@ def get_node(id, uri=NEO4J_URI, user=NEO4J_USER, pwd=NEO4J_PWD):
     query = f"MATCH (n) WHERE ID(n) = {id} RETURN n"
     result = run_query(query, uri=uri, user=user, pwd=pwd)
     driver.close()
-    
+
     return extract_nodes(result)[0] if result != [] else None
-    
+
 
 # --------------------------------------------------------------------------
 
@@ -164,7 +164,7 @@ def nodes_keys(nodes):
 
 def node_id(node):
     'Returns the trailing numeric portion to the Poolparty URL'
-    
+
     return node['code'].split('/')[-1]
 
 
@@ -188,7 +188,7 @@ def nodes_to_df(nodes):
     'Returns a DataFrame of nodes and their properties.'
     rows = []
     keys = nodes_keys(nodes)
-    
+
     # Extract properties of each node
     for node in nodes:
         id = node.id
@@ -218,7 +218,7 @@ def query_nodes(uri=NEO4J_URI, user=NEO4J_USER, pwd=NEO4J_PWD,
 
     result, driver = run_query(query, uri=uri, user=user, pwd=pwd)
     driver.close()
-    
+
     if valid_result_p(result) is True:
         nodes = [r['n'] for r in result]
         return nodes_to_df(nodes)
@@ -227,14 +227,14 @@ def query_nodes(uri=NEO4J_URI, user=NEO4J_USER, pwd=NEO4J_PWD,
 
 # ----------------------------------------------------------------
 
-def load_concepts(project_name, data_name='babar_concepts', 
+def load_concepts(project_name, data_name='babar_concepts',
                   source='storage', storage='data'):
     'Loads a nodes file for a particular project.'
 
     df = load_data(project_name, data_name, 'csv', source)
     if 'index' in df.columns:
         df.drop('index', axis=1, inplace=True)
-        
+
     return df
 
 
@@ -245,7 +245,7 @@ def save_concepts(project_name, df, data_name='babar_concepts',
     'Saves the concept relationships of a particular BU.'
 
     save_data(project_name, data_name, 'csv', df, destination)
-    
+
     return True
 
 

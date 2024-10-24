@@ -45,7 +45,7 @@ def save_data(df, data_name, data_dir, data_date, ext='csv'):
     pathname = os.path.join(data_dir, name)
     print(pathname)
     save_csv(df, pathname)
-    
+
     return True
 
 
@@ -65,10 +65,10 @@ def products_purchased_query(start_date, end_date):
     FROM `lmfr-ddp-dwh-prd.web_order.vf_order_merged` as om
     INNER JOIN `lmfr-ddp-dwh-prd.web_order.vf_order_detail_merged`  as omd
     ON om.id_cmde_web = omd.id_cmde_web
-    WHERE dat_cre >= '{start_date}' 
-    AND dat_cre <= '{end_date}' 
+    WHERE dat_cre >= '{start_date}'
+    AND dat_cre <= '{end_date}'
     """
-    
+
     return query
 
 # ----------------------------------------------------------------------------------
@@ -79,7 +79,7 @@ def query_products_purchased(bu, start_date, end_date):
 
     query = products_purchased_query(start_date, end_date)
     df = run_pdbq(query)
-    
+
     return df
 
 
@@ -95,19 +95,19 @@ def load_products_purchased(bu, data_dir, data_date, ext='csv'):
 
 def save_products_purchased(df, bu, data_date, ext='csv'):
     'Saves df to the purchases directory of bu for that year.'
-    
+
     dirname = os.path.join('purchases', data_date[:4])
     data_dir = make_data_dir(bu, dirname)
-    
+
     print(f'Saving product purchases for {data_date} to:')
     save_data(df, 'products-purchased', data_dir, data_date, ext='csv')
-    
+
     return True
 
 
 def month_date_range(year, month):
     'Return start and end dates of a particular month.'
-    
+
     ts = pd.date_range('{}-{}'.format(year, month), periods=1, freq='M')[0]
     end_date = ts.strftime("%Y-%m-%d")
     month = f'0{month}' if month < 10 else str(month)
@@ -117,13 +117,13 @@ def month_date_range(year, month):
 
 def monthly_date_ranges(year, n=12):
     'Return start and end dates of each month in a year.'
-    
+
     return [month_date_range(year, month+1) for month in range(n)]
 
 
 def retrieve_products_purchased(bu='lmfr'):
     'Queries and saves purchased products from 2020-2019.'
-    
+
     for year in ['2020', '2021', '2022', '2023']:
         print (f'\nProcessing purchases for {year}:')
         month_range = monthly_date_ranges(year)
@@ -135,7 +135,7 @@ def retrieve_products_purchased(bu='lmfr'):
             save_products_purchased(df, bu, start_date)
 
     return True
-            
+
 
 # **************************************************************************
 # End of File

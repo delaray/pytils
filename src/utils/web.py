@@ -41,7 +41,7 @@ REQUEST_HEADERS = {'User-Agent': 'Chrome/83.0.4103.97',
 def follow_url(url: str) -> str:
     resp = get_url_response(url)
     return resp.url if resp is not None else url
-    
+
 
 # --------------------------------------------------------------------
 # URL Response and Data
@@ -49,7 +49,7 @@ def follow_url(url: str) -> str:
 
 def get_url_response(url, headers=REQUEST_HEADERS, params={}):
     'Returns a response object or None'
-    
+
     try:
         return requests.get(url, headers=headers, allow_redirects=True,
                             params=params)
@@ -62,14 +62,14 @@ def get_url_response(url, headers=REQUEST_HEADERS, params={}):
 
 def get_url_data(url, params={}):
     'Returns the response object content or None'
-    
+
     response = get_url_response(url, params)
     if response is None:
         return None
     else:
         return str(response.content)
 
-    
+
 def initialize_chrome_options():
     global CHROME_OPTIONS
     CHROME_OPTIONS = webdriver.ChromeOptions()
@@ -88,7 +88,7 @@ def get_chrome_content(url):
     page_source = get_chrome_page_source(url)
     return page_source
 
-                       
+
 # --------------------------------------------------------------------
 
 H1 =  'text/html,application/xhtml+xml,application/xml;'
@@ -103,7 +103,7 @@ def get_url_content(url):
     req.add_header('Accept-Language', 'en-US,en;q=0.5')
 
     content = urllib.request.urlopen(req).read().decode('utf-8')
-    
+
     return content
 
 # --------------------------------------------------------------------
@@ -135,7 +135,7 @@ def parse_url_content(url):
 
 def scan_html(html):
     'Converts an html string to regular text with links ignored.'
-    
+
     h2t = html2text.HTML2Text()
     h2t.ignore_links = True
     text = h2t.handle(html)
@@ -146,7 +146,7 @@ def scan_html(html):
 
 def get_url_text(url):
     'Returns the text of the page with HTML removed.'
-    
+
     responce = get_url_response(url)
     if response is not None:
         html = response.text
@@ -229,7 +229,7 @@ def extract_title(url, response=None):
         return title
     else:
         return None
-    
+
 # -------------------------------------------------------------------
 
 def extract_urls (url, filter='', stop_words=[]):
@@ -241,9 +241,9 @@ def extract_urls (url, filter='', stop_words=[]):
             if filter in link['href'] and not contains_stop_word (link, stop_words):
                 # print(unquote(link['href']))
                 urls.append((unquote(link['href'])))
-        
+
     urls = [url for url in urls if url.startswith('http') is True]
-    
+
     return urls
 
 
@@ -257,9 +257,9 @@ def extract_url_entries (url, filter='', stop_words=[]):
         for link in soup.find_all('a', href=True):
             if filter in link['href'] and not contains_stop_word (link, stop_words):
                 urls.append([(unquote(link['href'])), link.get_text()])
-        
+
     urls = [url for url in urls if url[0].startswith('http') is True]
-    
+
     return urls
 
 # -------------------------------------------------------------------
@@ -274,7 +274,7 @@ def extract_full_urls(url, root_url, filter='', stop_words=[]):
             full_url = u
         full_urls.append(full_url)
     return full_urls
- 
+
 # -------------------------------------------------------------------
 
 def extract_internal_urls(url, root_url, filter='', stop_words=[]):

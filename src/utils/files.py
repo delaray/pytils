@@ -39,6 +39,11 @@ def files_in_dir(dir, filter=''):
     files = [join(dir, f) for f in listdir(dir) if isfile(join(dir, f))]
     return [f for f in files if filter in f]
 
+# ----------------------------------------------------------------------
+
+def subdirs_in_dir(dir, filter=''):
+    dirs = [join(dir, f) for f in listdir(dir) if not isfile(join(dir, f))]
+    return [f for f in files if filter in f]
 
 # ----------------------------------------------------------------------
 

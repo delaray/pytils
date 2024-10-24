@@ -26,7 +26,7 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(pieces[0], [1, 3])
         self.assertEqual(pieces[1], [2, 4])
         self.assertEqual(pieces[2], [5])
-        
+
     def test_make_data_pathname(self):
         pathname = make_data_pathname('foobar.csv')
         self.assertEqual('data' in pathname, True)
@@ -49,7 +49,7 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(df1.shape, df2.shape)
 
 
-        
+
 if __name__ == '__main__':
     unittest.main()
 

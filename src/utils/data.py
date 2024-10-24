@@ -37,9 +37,9 @@ def split_list(mylist, n=2):
 
 def split_dict(mydict, n=2):
     'Splits mydict into n pieces.'
-    
+
     if n < len(mydict):
-        i = itertools.cycle(range(n))       
+        i = itertools.cycle(range(n))
         split = [dict() for _ in range(n)]
         for k, v in mydict.items():
             split[next(i)][k] = v
@@ -63,7 +63,7 @@ def chunk_dict(mydict, n=5):
 
 def split_dataframe(df, n=4):
     'Splits dataframe into n+1 dataframes.'
-    
+
     if n < df.shape[0]:
         size = math.trunc(df.shape[0] / n)
         dfs = [df[i*size: ((i+1)*size)-1] for i in range(n-1)]
@@ -91,7 +91,7 @@ def column_to_str(df, col):
         else:
             text = str(text)
         return text
-    
+
     df[col] = df[col].apply(stringify)
     return df
 
@@ -267,4 +267,3 @@ def count_class_instances(df, ccol='class'):
 # ****************************************************************
 # End of File
 # ****************************************************************
-

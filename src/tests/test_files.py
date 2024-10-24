@@ -25,7 +25,7 @@ class TestFiles(unittest.TestCase):
         # self.assertEqual(df1.equals(df2), True)
         self.assertEqual(df1.shape, df2.shape)
 
-        
+
 if __name__ == '__main__':
     unittest.main()
 

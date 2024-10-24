@@ -22,7 +22,6 @@ import pandas as pd
 import pandas_gbq
 import nltk
 
-
 # ------------------------------------------------------------
 # Count Words
 # ------------------------------------------------------------
@@ -61,7 +60,7 @@ def count_words(sentences, tokens=None, min_count=1000):
 
 def tokens_distributions(df, tcol='text'):
     'Returns the distribution of the number of tokens per text column.'
-    
+
     size, dist, total = df.shape[0], {},  0
     min_len, max_len = 1000000, 0
 
@@ -83,7 +82,7 @@ def tokens_distributions(df, tcol='text'):
 
 def text_ranges(df, tcol='text'):
     'Partitions text counts by powers of 10 based on token count.'
-    
+
     text_lengths = {}
     for index, row in df.iterrows():
         tokens = tokenize_designation(row[tcol])
@@ -96,7 +95,7 @@ def text_ranges(df, tcol='text'):
             if k < b:
                 results.update({b: results.get(b, 0) + text_lengths[k]})
                 break
-            
+
     return results
 
 
@@ -106,14 +105,14 @@ def text_ranges(df, tcol='text'):
 
 def find_first_word(words, descriptions):
     'Return the word in words that occurs earliest on average in descriptions.'
-    
+
     position_results = []
     for word in words:
         positions = list(map(lambda desc: desc.find(word), descriptions))
         position = int(reduce(lambda a, b: a + b, positions) / len(positions))
         position_results.append([word, position])
         position_results.sort(key=lambda x: x[1], reverse=True)
-        
+
     return position_results[0][0]
 
 
@@ -128,10 +127,10 @@ def find_first_word(words, descriptions):
 
 def select_best_word(descriptions, words_df):
     'Return the most frequently ocuring word in descriptions.'
-    
+
     max_count = words_df['count'].max()
     max_words = list(words_df.loc[words_df['count'] == max_count]['word'])
-    
+
     if len(max_words) == 1:
         return max_words[0]
     else:
@@ -146,7 +145,7 @@ def alphabetic_word_p(word):
     'Returns True if word contains only alpabetic utf characters.'
 
     alphap = re.match(r'[^\W\d]*$', word)
-    
+
     return True if alphap is not None else False
 
 
@@ -200,7 +199,7 @@ def tokenize_text(text, alpha_only=False, stopwords=None):
 
 def tokenize_designation(text):
     'Return a list of tokens with alphanumeric and stopwords retained.'
-    
+
     # return [x for x in text.split(' ') if x not in PUNCTUATIONS]
     return tokenize_text(text, alpha_only=False, stopwords=None)
 
@@ -221,7 +220,7 @@ def clean_designations(df, tcol='designation'):
     df[tcol] = df[tcol].apply(clean)
     return df
 
-                
+
 # -------------------------------------------------------------------
 # Scan Sentences
 # -------------------------------------------------------------------
@@ -230,7 +229,7 @@ def clean_designations(df, tcol='designation'):
 
 def scan_sentences(text):
     'Splits text into sentences based on periods.'
-    
+
     return text.split('.')
 
 
@@ -263,7 +262,7 @@ def interleave_lists(l1, l2):
 
 def apply_combination_method(l1, l2, method):
     'Combines tokens in l1 and l2 in one of three possible ways.'
-    
+
     if method == 'reversing':
         token_list = (l1 + l2)[::-1]
     elif method == 'interleaving':
@@ -281,7 +280,7 @@ def apply_combination_method(l1, l2, method):
 def combine_token_lists(token_lists1, token_lists2, method='halving',
                         limit=None):
     'Returns an augmented set of token lists with n^2 - n new lists.'
-    
+
     new_token_lists = []
     count = 0
 
@@ -299,7 +298,7 @@ def combine_token_lists(token_lists1, token_lists2, method='halving',
 
 
 # --------------------------------------------------------------------
-# Invent Data 
+# Invent Data
 # --------------------------------------------------------------------
 
 # This generates new sentences from the sentences in DF. Three text invention

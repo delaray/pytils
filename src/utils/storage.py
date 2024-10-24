@@ -42,7 +42,7 @@ logger = logging.getLogger()
 
 
 # ****************************************************************
-# DATA LOCATION 
+# DATA LOCATION
 # ****************************************************************
 
 # KGUTILS GCP Defaults
@@ -55,7 +55,7 @@ GCP_STORAGE = 'aiscape'
 GCP_DATASET = 'aiscape'
 DATASET_ID = GCP_DATASET
 
-# Local FileSystem Data Directory 
+# Local FileSystem Data Directory
 DATA_DIR = os.environ['DATA_DIR']
 
 # ****************************************************************
@@ -65,10 +65,10 @@ DATA_DIR = os.environ['DATA_DIR']
 
 def get_qualified_table_id(project, dataset, table_name):
     'Return the fullt quali9fied BD table path'
-    
+
     table_path = f'`{project}.{dataset}.{table_name}`'
     # logger.warning(f'\nTable_id: {table_path}\n')
-    
+
     return table_path
 
 # --------------------------------------------------------------
@@ -77,10 +77,10 @@ def table_exists(client, table_id, dataset_id=DATASET_ID):
     table_ref = client.dataset(dataset_id).table(table_id)
     try:
         client.get_table(table_ref)
-        return True 
+        return True
     except Exception as err:
         # logger.warning(f'\nError: Table {table_ref} not found.\n{err}')
-        return False 
+        return False
 
 
 # ****************************************************************
@@ -120,7 +120,7 @@ def delete_bq_table(client, table_id, project_id=PROJECT_ID,
             return True
         else:
             return False
-        
+
     except Exception as err:
         logger.error(f'\nError deleting table {table_path}:\n{err}')
         return False
@@ -130,15 +130,15 @@ def delete_bq_table(client, table_id, project_id=PROJECT_ID,
 
 def count_bq_table(client, table_id, project_id=PROJECT_ID,
                    dataset_id=DATASET_ID):
-        
+
     table_path = get_qualified_table_id(project_id, dataset_id, table_id)
     try:
         query = f'SELECT count(*) from {table_path};'
         results = run_bq_query(query, client=client)
-        count = list(results)[0].values()[0] 
+        count = list(results)[0].values()[0]
         return count
 
-                     
+
     except Exception as err:
         logger.error(f'\nError counting rows in table {table_path}:\n{err}')
         return None
@@ -148,14 +148,14 @@ def count_bq_table(client, table_id, project_id=PROJECT_ID,
 
 def clear_bq_table(client, table_id, project_id=PROJECT_ID,
                    dataset_id=DATASET_ID):
-        
+
     table_path = get_qualified_table_id(project_id, dataset_id, table_id)
     try:
         logger.warning(f'\nTable Path: {table_path}\n')
         query = f'DELETE from {table_path} WHERE true;'
         run_bq_query(query, client=client)
         return True
-                     
+
     except Exception as err:
         logger.error(f'\nError clearing table {table_path}:\n{err}')
         return False
@@ -166,7 +166,7 @@ def clear_bq_table(client, table_id, project_id=PROJECT_ID,
 
 def ensure_bq_column_type_values(df):
     'Replaces NaN values with actual value based on column type.'
-    
+
     types = df.dtypes
     if 'alternatives' in df.columns:
         df['alternatives'].fillna('')
@@ -179,7 +179,7 @@ def ensure_bq_column_type_values(df):
         if col_type == dtype('object'):
             df[col] = df[col].fillna('')
     df = df.fillna('')
-    
+
     return df
 
 
@@ -196,7 +196,7 @@ def table_to_bq(df, project=PROJECT_ID, dataset='', table_name=''):
 
     # Ensure resasonable values
     df = ensure_bq_column_type_values(df)
-    
+
     # Create the new table
     create_bq_table(table_name,  df, project_id=project)
 
@@ -290,7 +290,7 @@ def data_directory_fs(name, target=None):
         return os.path.join(DATA_DIR, name, target)
     else:
         return os.path.join(DATA_DIR, name)
-        
+
 
 
 # -----------------------------------------------------------
@@ -333,19 +333,19 @@ def ensure_model_directory_fs(name, folder=None):
 
     directory = data_directory_fs(name)
     if os.path.isdir(directory) is False:
-        
+
         # This needs to be deprecated (see classifier)
         os.makedirs(directory)
         os.makedirs(directory + '/data')
         os.makedirs(directory + '/model')
         os.makedirs(directory + '/results')
-        
+
     # Create subdirectory if specified
     if folder is not None:
         folder_dir = f'{directory}/{folder}'
         if os.path.isdir(folder_dir) is False:
             os.makedirs(folder_dir)
-            
+
     return True
 
 
@@ -381,7 +381,7 @@ def target_directory_gs(model_name, target=None, bucket=GCP_BUCKET,
 def model_directory_gs(model_name, bucket=GCP_BUCKET,
                        storage=GCP_STORAGE):
     'Return the google storage model path of a data.'
-    
+
     return target_directory_gs(model_name, target='model',
                                bucket=bucket, storage=storage)
 
@@ -389,7 +389,7 @@ def model_directory_gs(model_name, bucket=GCP_BUCKET,
 def data_directory_gs(model_name, bucket=GCP_BUCKET,
                       storage=GCP_STORAGE, folder=None):
     'Return the google storage data path of a data.'
-    
+
     return target_directory_gs(model_name, target=folder,
                                bucket=bucket, storage=storage)
 
@@ -397,7 +397,7 @@ def data_directory_gs(model_name, bucket=GCP_BUCKET,
 def results_directory_gs(model_name, bucket=GCP_BUCKET,
                          storage=GCP_STORAGE):
     'Return the google storage results path of a data.'
-    
+
     return target_directory_gs(model_name, target='results',
                                bucket=bucket, storage=storage)
 
@@ -544,7 +544,7 @@ def upload_results_blob(name, file_pathname, bucket=GCP_BUCKET,
 
     blob_path = data_directory_gs(name, bucket=bucket, storage=storage, folder=folder)
     blob_pathname = blob_path + os.path.basename(file_pathname)
-    
+
     upload_blob(blob_pathname, file_pathname)
 
 
@@ -564,24 +564,24 @@ def data_type_pathname(model_name, data_name, data_type, folder=None):
 
 def save_data_fs(model_name, data_name, data_type, data, folder=None):
     'Saves data to local filesystem.'
-    
+
     pathname = data_type_pathname(model_name, data_name, data_type,
                                   folder=folder)
 
     # logger.warning(f'\nSaving to local filesystem:\nPathname: {pathname}\n')
-          
+
     if data_type == 'csv':
         save_csv(data, pathname)
-        
+
     elif data_type == 'json':
         save_dict(data, pathname)
-        
+
     elif data_type == 'xlsx':
         write_excel(data, pathname)
 
     elif data_type == 'text' or data_type == 'html':
         save_text_file(data, pathname)
-        
+
     else:
         logger.error(f'Error: Unrecognized data type {data_type}.')
 
@@ -625,17 +625,17 @@ def save_data(model_name, data_name, data_type, tdf, destination,
     'Saves data to either local filesystem, Google Storage or Google BQ.'
 
     ensure_model_directory_fs(model_name, folder=folder)
-    
+
     if destination == 'file':
         save_data_fs(model_name, data_name, data_type, tdf, folder=folder)
-        
+
     elif destination == 'storage':
         save_data_gs(model_name, data_name, data_type, tdf,
                      bucket=bucket, storage=storage, folder=folder)
-        
+
     elif destination == 'bq' or destination == 'db':
         save_data_bq(model_name, data_name, tdf, project, dataset)
-                     
+
     else:
         logger.error(f'Error: Invalid destination {destination}.')
 
@@ -652,10 +652,10 @@ def load_data_fs(model_name, data_name, data_type, folder=None):
     # logger.warning(f'\nLoading from local filesystem:\nPathname: {pathname}\n')
     if data_type == 'csv':
         return load_csv(pathname)
-    
+
     elif data_type == 'json':
         return load_dict(pathname)
-    
+
     elif data_type == 'xlsx':
         return read_excel(pathname)
     else:
@@ -671,7 +671,7 @@ def load_data_gs(model_name, data_name, data_type, bucket=GCP_BUCKET,
 
     filename = f'{model_name}-{data_name}.{data_type}'
     file_pathname = data_pathname(model_name, filename, folder=folder)
-    
+
     # First download from Google storage
     download_data_blob(model_name, file_pathname, bucket=bucket, storage=storage,
                        folder=folder)
@@ -696,7 +696,7 @@ def load_data_bq(model_name, data_name, project, dataset):
     else:
         logger.error('Error: Either project or dataset was not specified.')
         return None
-    
+
 
 # -----------------------------------------------------------
 
@@ -707,17 +707,17 @@ def load_data(model_name, data_name, data_type, source,
     'Loads data from either local filesystem, Google Storage or Google BQ.'
 
     ensure_model_directory_fs(model_name, folder=folder)
-    
+
     if source == 'file':
         return load_data_fs(model_name, data_name, data_type, folder=folder)
-    
+
     elif source == 'storage':
         return load_data_gs(model_name, data_name, data_type, bucket=bucket,
                             storage=storage, folder=folder)
-    
+
     elif source == 'bq' or source == 'db':
         return load_data_bq(model_name, data_name, project, dataset)
-    
+
     else:
         logger.error(f'Error: Invalid destination {source}.')
         return None
@@ -753,11 +753,11 @@ def save_results_gs(model_name, results_name, data_type, results,
 
     # First save to local filesystem
     save_results_fs(model_name, results_name, data_type, results)
-    
+
     # Now upload to Google storage
     pathname = results_type_pathname(model_name, results_name, data_type)
     upload_results_blob(model_name, pathname, bucket=bucket, storage=storage)
-    
+
     return True
 
 
@@ -783,14 +783,14 @@ def save_results(model_name, results_name, data_type, results, destination,
     'Saves results to local filesystem or to Google Storage.'
 
     ensure_model_directory_fs(model_name, folder=folder)
-    
+
     if destination == 'file':
         save_results_fs(model_name, results_name, data_type, results)
-        
+
     elif destination == 'storage':
         save_results_gs(model_name, results_name, data_type, results,
                         storage=results)
-        
+
     elif destination == 'bq' or destination == 'db':
         save_results_bq(model_name, results_name, results,
                         project=project, dataset=dataset)
@@ -807,21 +807,21 @@ def save_results(model_name, results_name, data_type, results, destination,
 
 def load_results_fs(model_name, results_name, data_type):
     'Loads data from local filesystem.'
-    
+
     pathname = results_type_pathname(model_name, results_name, data_type)
-    
+
     if data_type == 'csv':
         return load_csv(pathname)
-    
+
     elif data_type == 'json':
         return load_dict(pathname)
-    
+
     elif data_type == 'xlsx':
         return read_excel(pathname)
-    
+
     elif data_type == 'text' or data_type == 'html':
         save_text_file(data, pathname)
-        
+
     else:
         logger.error(f'Error: Unrecognized data type {data_type}.')
         return None
@@ -835,10 +835,10 @@ def load_results_gs(model_name, results_name, data_type):
     # First download from Google storage
     pathname = results_type_pathname(model_name, results_name, data_type)
     download_results_blob(model_name, pathname)
-    
+
     # Now load from local filesystem
     results = load_results_fs(model_name, results_name, data_type)
-    
+
     return results
 
 
@@ -851,24 +851,24 @@ def load_results(model_name, results_name, data_type, source,
     'Loads data from either filesystem or Google Storage.'
 
     ensure_model_directory_fs(model_name, folder=folder)
-    
+
     if source == 'file':
         return load_results_fs(model_name, results_name, data_type)
-    
+
     elif source == 'storage':
         return load_results_gs(model_name, results_name, data_type,
                                bucket=bucket, storage=storage)
-    
+
     elif source == 'bq' or source == 'db':
         return load_data_bq(model_name, data_name, project, dataset)
-    
+
     else:
         logger.error(f'Error: Invalid destination {source}.')
         return None
 
 
 # ****************************************************************
-# Google Sheets 
+# Google Sheets
 # ****************************************************************
 
 AUTH_FILE = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS', None)
@@ -895,8 +895,8 @@ def get_google_client(json_key_file=AUTH_FILE):
 
     # Load the credentials
     creds = ServiceAccountCredentials.from_json_keyfile_name(json_key_file, scope)
-    
-    # Authorize the clientsheet 
+
+    # Authorize the clientsheet
     return gspread.authorize(creds)
 
 
@@ -917,7 +917,7 @@ def get_google_sheet(url: str, json_key_file=AUTH_FILE):
     except Exception as err:
         logger.warning(f'\nError accessing Google sheet:\n{url}')
         return None, client
-    
+
 
 # -----------------------------------------------------------
 
@@ -929,7 +929,7 @@ def load_google_sheet(sheet_url: str, json_key_file=AUTH_FILE):
     if worksheet is not None:
         # Get all the records of the data
         data = worksheet.get_all_records()
-    
+
         # Convert the list of dictionaries into a DataFrame
         df = pd.DataFrame(data)
         return df
@@ -954,7 +954,7 @@ def save_google_sheet(df, sheet_url, json_key_file=AUTH_FILE):
 
 
 # ****************************************************************
-# Google Drive  
+# Google Drive
 # ****************************************************************
 
 def extract_folder_id(folder_url):
@@ -972,7 +972,7 @@ def list_files_in_folder(folder_url, json_key_file=AUTH_FILE):
 
     # Get the folder id
     folder_id = extract_folder_id(folder_url)
-    
+
     # Load the credentials
     creds = service_account.Credentials.from_service_account_file(
         json_key_file,
@@ -993,7 +993,7 @@ def list_files_in_folder(folder_url, json_key_file=AUTH_FILE):
 
     if not files:
         logger.warning('No files found.')
-        
+
     else:
         logger.warning('Files:')
         for file in files:
@@ -1076,7 +1076,7 @@ def download_file(file_id, json_key_file, local_file_path):
 
 
 # # --------------------------------------------------------------
-# # Create BQ Table 
+# # Create BQ Table
 # # --------------------------------------------------------------
 
 # def create_bq_table(project, dataset, table_name, df):
