@@ -5,6 +5,8 @@
 import os
 import re
 import email
+import requests
+import msal
 import imaplib
 from email.header import decode_header
 from exchangelib import Credentials, Account, Configuration, DELEGATE
@@ -25,6 +27,9 @@ GMAIL_PWD = os.environ.get('GMAIL_PWD', 'XXXXX')
 GMAIL_SMTP_SERVER = "smtp.gmail.com"
 GMAIL_SMTP_PORT = 465
 
+AZURE_CLIENT_ID = os.environ.get('AZURE_CLIENT_ID')
+AZURE_TENANT_ID = os.environ.get('AZURE_TENANT_ID')
+AZURE_CLIENT_SECRET = os.environ.get('AZURE_CLIENT_SECRET')
 
 # ********************************************************************************
 # Part 2: Sending Email
@@ -152,9 +157,9 @@ def get_hotmail_account(user=HOTMAIL_USER, pwd=HOTMAIL_PWD,
             config = Configuration(server=server, credentials=credentials)
 
             account = Account(primary_smtp_address=user_email,
-                              credentials=credentials,
+                              # credentials=credentials,
                               config=config,
-                              autodiscover=True,
+                              autodiscover=False,
                               access_type=DELEGATE)
             return account
 
@@ -282,6 +287,64 @@ def move_hotmail_message(message, to_folder=None, user=HOTMAIL_USER,
 #         with open(fpath, 'wb') as f:
 #             f.write(attachment.content)
 #     item.move(to_folder)
+
+
+# -----------------------------------------------------------------
+# GET Microsoft AZURE EMAILS
+# -----------------------------------------------------------------
+
+def get_ms_emails(sender_email, client_id=AZURE_CLIENT_ID,
+                  tenant_id=AZURE_TENANT_ID,
+                  client_secret=AZURE_CLIENT_SECRET,
+                  retries=3):
+    # Microsoft Graph API endpoint
+    graph_api_endpoint = 'https://graph.microsoft.com/v1.0'
+
+    # Set up the MSAL app
+    app = msal.ConfidentialClientApplication(
+        client_id,
+        authority=f'https://login.microsoftonline.com/{tenant_id}',
+        client_credential=client_secret)
+
+    # Acquire a token
+    scopes = ['https://graph.microsoft.com/.default']
+    result = app.acquire_token_for_client(scopes=scopes)
+
+    if 'access_token' in result:
+        # Set up the request headers with the access token
+        headers = {
+            'Authorization': 'Bearer ' + result['access_token']
+        }
+
+        # Define the API endpoint to search for emails from a specific sender
+        # Using $filter in Microsoft Graph API to specify the sender
+        path = '/me/messages?$filter=from/emailAddress/address eq'
+
+        messages_endpoint = f"{graph_api_endpoint}{path} '{sender_email}'"
+
+        # Make the GET request
+        response = requests.get(messages_endpoint, headers=headers)
+
+        if response.status_code == 200:
+            # Process the email data
+            messages = response.json().get('value', [])
+            for message in messages:
+                print("Subject:", message.get('subject'))
+                print("From:", message.get('from').get('emailAddress').get('address'))
+                print("Received Date:", message.get('receivedDateTime'))
+                print("Body Preview:", message.get('bodyPreview'))
+                print("\n---\n")
+                break
+            return messages
+        else:
+            print("Error:", response.status_code, response.json())
+            return None
+    else:
+        print("Authentication failed:", result.get("error"),
+              result.get("error_description"))
+        return None
+
+
 
 
 # -----------------------------------------------------------------
