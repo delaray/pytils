@@ -40,6 +40,8 @@ import logging
 # Need a better way of initilizing logger
 logger = logging.getLogger()
 
+# Ensure a value for DATA_DIR exists.
+DATA_DIR if tryVar(DATA_DIR) is None else os.environ['DATA_DIR']
 
 # ****************************************************************
 # DATA LOCATION
@@ -139,11 +141,6 @@ def count_bq_table(client, table_id, project_id=PROJECT_ID,
         count = list(results)[0].values()[0]
         return count
 
-
-<< << << < Updated upstream
-
-== == == =
->>>>>> > Stashed changes
     except Exception as err:
         logger.error(f'\nError counting rows in table {table_path}:\n{err}')
         return None
@@ -296,12 +293,6 @@ def data_directory_fs(name, target=None):
         return os.path.join(DATA_DIR, name, target)
     else:
         return os.path.join(DATA_DIR, name)
-
-
-<< << << < Updated upstream
-
-== == == =
->>>>>> > Stashed changes
 
 
 # -----------------------------------------------------------
@@ -663,18 +654,6 @@ def save_data(model_name, data_name, data_type, tdf, destination,
     ensure_model_directory_fs(model_name, folder=folder)
 
     if destination == 'file':
-
-
-<< << << < Updated upstream
-        save_data_fs(model_name, data_name, data_type, tdf, folder=folder)
-
-    elif destination == 'storage':
-        save_data_gs(model_name, data_name, data_type, tdf,
-                     bucket=bucket, storage=storage, folder=folder)
-
-    elif destination == 'bq' or destination == 'db':
-        save_data_bq(model_name, data_name, tdf, project, dataset)
-=======
         save_data_fs(model_name, data_name, data_type, tdf, folder=folder,
                      include_model_prefix=include_model_prefix)
 
@@ -686,7 +665,6 @@ def save_data(model_name, data_name, data_type, tdf, destination,
     elif destination == 'bq' or destination == 'db':
         save_data_bq(model_name, data_name, tdf, project, dataset,
                      include_model_prefix=include_model_prefix)
->>>>>>> Stashed changes
 
     else:
         logger.error(f'Error: Invalid destination {destination}.')
@@ -724,13 +702,8 @@ def load_data_gs(model_name, data_name, data_type, bucket=GCP_BUCKET,
                  include_model_prefix=False):
     'Loads data from Google Storage.'
 
-    filename = f'{model_name}-{data_name}.{data_type}'
-<<<<<<< Updated upstream
-    file_pathname = data_pathname(model_name, filename, folder=folder)
-=======
-    file_pathname = data_pathname(model_name, filename, folder=folder,
-                                  include_model_prefix=include_model_prefix)
->>>>>>> Stashed changes
+    file_pathname = data_type_pathname(model_name, data_name, folder=folder,
+                                       include_model_prefix=include_model_prefix)
 
     # First download from Google storage
     download_data_blob(model_name, file_pathname, bucket=bucket, storage=storage,
@@ -771,16 +744,6 @@ def load_data(model_name, data_name, data_type, source,
     ensure_model_directory_fs(model_name, folder=folder)
 
     if source == 'file':
-<<<<<<< Updated upstream
-        return load_data_fs(model_name, data_name, data_type, folder=folder)
-
-    elif source == 'storage':
-        return load_data_gs(model_name, data_name, data_type, bucket=bucket,
-                            storage=storage, folder=folder)
-
-    elif source == 'bq' or source == 'db':
-        return load_data_bq(model_name, data_name, project, dataset)
-=======
         return load_data_fs(model_name, data_name, data_type, folder=folder,
                             include_model_prefix=include_model_prefix)
 
@@ -792,7 +755,6 @@ def load_data(model_name, data_name, data_type, source,
     elif source == 'bq' or source == 'db':
         return load_data_bq(model_name, data_name, project, dataset,
                             include_model_prefix=include_model_prefix)
->>>>>>> Stashed changes
 
     else:
         logger.error(f'Error: Invalid destination {source}.')
@@ -973,7 +935,8 @@ def get_google_client(json_key_file=AUTH_FILE):
     ]
 
     # Load the credentials
-    creds = ServiceAccountCredentials.from_json_keyfile_name(json_key_file, scope)
+    creds = ServiceAccountCredentials.from_json_keyfile_name(
+        json_key_file, scope)
 
     # Authorize the clientsheet
     return gspread.authorize(creds)
