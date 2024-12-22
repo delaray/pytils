@@ -73,6 +73,7 @@ def get_qualified_table_id(project, dataset, table_name):
 
 # --------------------------------------------------------------
 
+
 def table_exists(client, table_id, dataset_id=DATASET_ID):
     table_ref = client.dataset(dataset_id).table(table_id)
     try:
@@ -139,6 +140,10 @@ def count_bq_table(client, table_id, project_id=PROJECT_ID,
         return count
 
 
+<< << << < Updated upstream
+
+== == == =
+>>>>>> > Stashed changes
     except Exception as err:
         logger.error(f'\nError counting rows in table {table_path}:\n{err}')
         return None
@@ -163,6 +168,7 @@ def clear_bq_table(client, table_id, project_id=PROJECT_ID,
 # --------------------------------------------------------------
 # Ensure BQ Column Type Values
 # --------------------------------------------------------------
+
 
 def ensure_bq_column_type_values(df):
     'Replaces NaN values with actual value based on column type.'
@@ -291,6 +297,11 @@ def data_directory_fs(name, target=None):
     else:
         return os.path.join(DATA_DIR, name)
 
+
+<< << << < Updated upstream
+
+== == == =
+>>>>>> > Stashed changes
 
 
 # -----------------------------------------------------------
@@ -445,7 +456,7 @@ def data_blobs(name, bucket=GCP_BUCKET, storage=GCP_STORAGE):
 # Downloading Blobs
 # -----------------------------------------------------------
 
-def download_blob(blob_pathname, file_name, model_name, folder = 'data'):
+def download_blob(blob_pathname, file_name, model_name, folder='data'):
     'Downloads a blob from the named model.'
 
     blobs = named_blobs(blob_pathname)
@@ -496,7 +507,8 @@ def download_data_blobs(model_name, bucket=GCP_BUCKET, folder=None):
 def download_results_blob(model_name, filename, storage=GCP_STORAGE, bucket=GCP_BUCKET):
     'Downloads a results blob from the named model.'
 
-    blob_path = results_directory_gs(model_name, bucket=bucket, storage=storage)
+    blob_path = results_directory_gs(
+        model_name, bucket=bucket, storage=storage)
     download_blob(blob_path, filename, model_name)
 
 
@@ -542,31 +554,44 @@ def upload_results_blob(name, file_pathname, bucket=GCP_BUCKET,
                         storage=GCP_STORAGE, folder='results'):
     'Upload a data blob from the named data.'
 
-    blob_path = data_directory_gs(name, bucket=bucket, storage=storage, folder=folder)
+    blob_path = data_directory_gs(
+        name, bucket=bucket, storage=storage, folder=folder)
     blob_pathname = blob_path + os.path.basename(file_pathname)
 
     upload_blob(blob_pathname, file_pathname)
 
 
-# ----------------------------------------------------------
+# ***********************************************************
 # Save Data
+# ***********************************************************
+
+def data_filename(model_name, data_name, data_type,
+                  include_model_prefix=False):
+    if include_model_prefix:
+        return f'{model_name}-{data_name}.{data_type}'
+    else:
+        return f'{data_name}.{data_type}'
+
+
 # -----------------------------------------------------------
 
-def data_filename(model_name, data_name, data_type):
-    return f'{model_name}-{data_name}.{data_type}'
+def data_type_pathname(model_name, data_name, data_type, folder=None,
+                       include_model_prefix=False):
+    filename = data_filename(model_name, data_name, data_type,
+                             include_model_prefix=include_model_prefix)
 
-def data_type_pathname(model_name, data_name, data_type, folder=None):
-    filename = data_filename(model_name, data_name, data_type)
     return data_pathname(model_name, filename, folder=folder)
 
 
 # -----------------------------------------------------------
 
-def save_data_fs(model_name, data_name, data_type, data, folder=None):
+def save_data_fs(model_name, data_name, data_type, data, folder=None,
+                 include_model_prefix=False):
     'Saves data to local filesystem.'
 
     pathname = data_type_pathname(model_name, data_name, data_type,
-                                  folder=folder)
+                                  folder=folder,
+                                  include_model_prefix=include_model_prefix)
 
     # logger.warning(f'\nSaving to local filesystem:\nPathname: {pathname}\n')
 
@@ -589,28 +614,39 @@ def save_data_fs(model_name, data_name, data_type, data, folder=None):
 # -----------------------------------------------------------
 
 def save_data_gs(model_name, data_name, data_type, tdf, bucket=GCP_BUCKET,
-                 storage=GCP_STORAGE, folder=None):
+                 storage=GCP_STORAGE, folder=None,
+                 include_model_prefix=False):
     'Saves data to Google Storage.'
 
     # First save to local filesystem
-    save_data_fs(model_name, data_name, data_type, tdf, folder=folder)
+    save_data_fs(model_name, data_name, data_type, tdf, folder=folder,
+                 include_model_prefix=include_model_prefix)
+
     # Now upload to Google storage
-    file_pathname = data_type_pathname(model_name, data_name, data_type, folder=folder)
+    file_pathname = data_type_pathname(model_name, data_name, data_type, folder=folder,
+                                       include_model_prefix=include_model_prefix)
     upload_data_blob(model_name, file_pathname, bucket=bucket,
                      storage=storage, folder=folder)
+
     return True
 
 
 # -----------------------------------------------------------
 
-def save_data_bq(model_name, data_name, tdf, project, dataset):
+def save_data_bq(model_name, data_name, tdf, project, dataset,
+                 include_model_prefix=False):
     'Saves data to Google BQ.'
 
     if project is not None and dataset is not None:
-        table_name = f'{model_name}-{data_name}'
-        # logger.warning(f'\nProject: {project}\nDataset: {dataset}\nTable: {table_name}\n')
-        table_to_bq(tdf, project=project, dataset=dataset, table_name=table_name)
+
+        if include_model_prefix:
+            table_name = f'{model_name}-{data_name}'
+        else:
+            table_name = data_name
+        table_to_bq(tdf, project=project, dataset=dataset,
+                    table_name=table_name)
         return True
+
     else:
         logger.error('Error: Must specify BQ project and dataset.')
         return False
@@ -621,12 +657,15 @@ def save_data_bq(model_name, data_name, tdf, project, dataset):
 def save_data(model_name, data_name, data_type, tdf, destination,
               project=PROJECT_ID, dataset=GCP_DATASET,
               bucket=GCP_BUCKET, storage=GCP_STORAGE,
-              folder=None):
+              folder=None, include_model_prefix=False):
     'Saves data to either local filesystem, Google Storage or Google BQ.'
 
     ensure_model_directory_fs(model_name, folder=folder)
 
     if destination == 'file':
+
+
+<< << << < Updated upstream
         save_data_fs(model_name, data_name, data_type, tdf, folder=folder)
 
     elif destination == 'storage':
@@ -635,19 +674,34 @@ def save_data(model_name, data_name, data_type, tdf, destination,
 
     elif destination == 'bq' or destination == 'db':
         save_data_bq(model_name, data_name, tdf, project, dataset)
+=======
+        save_data_fs(model_name, data_name, data_type, tdf, folder=folder,
+                     include_model_prefix=include_model_prefix)
+
+    elif destination == 'storage':
+        save_data_gs(model_name, data_name, data_type, tdf,
+                     bucket=bucket, storage=storage, folder=folder,
+                     include_model_prefix=include_model_prefix)
+
+    elif destination == 'bq' or destination == 'db':
+        save_data_bq(model_name, data_name, tdf, project, dataset,
+                     include_model_prefix=include_model_prefix)
+>>>>>>> Stashed changes
 
     else:
         logger.error(f'Error: Invalid destination {destination}.')
 
 
-# ----------------------------------------------------------
+# ****************************************************************
 # Load Data
-# -----------------------------------------------------------
+# ****************************************************************
 
-def load_data_fs(model_name, data_name, data_type, folder=None):
+def load_data_fs(model_name, data_name, data_type, folder=None,
+                 include_model_prefix=False):
     'Loads data from local filesystem.'
 
-    pathname = data_type_pathname(model_name, data_name, data_type, folder=folder)
+    pathname = data_type_pathname(model_name, data_name, data_type, folder=folder,
+                                  include_model_prefix=include_model_prefix)
 
     # logger.warning(f'\nLoading from local filesystem:\nPathname: {pathname}\n')
     if data_type == 'csv':
@@ -666,25 +720,33 @@ def load_data_fs(model_name, data_name, data_type, folder=None):
 # -----------------------------------------------------------
 
 def load_data_gs(model_name, data_name, data_type, bucket=GCP_BUCKET,
-                 storage=GCP_STORAGE, folder=None):
+                 storage=GCP_STORAGE, folder=None,
+                 include_model_prefix=False):
     'Loads data from Google Storage.'
 
     filename = f'{model_name}-{data_name}.{data_type}'
+<<<<<<< Updated upstream
     file_pathname = data_pathname(model_name, filename, folder=folder)
+=======
+    file_pathname = data_pathname(model_name, filename, folder=folder,
+                                  include_model_prefix=include_model_prefix)
+>>>>>>> Stashed changes
 
     # First download from Google storage
     download_data_blob(model_name, file_pathname, bucket=bucket, storage=storage,
                        folder=folder)
 
     # Now load from local filesystem
-    data = load_data_fs(model_name, data_name, data_type, folder=folder)
+    data = load_data_fs(model_name, data_name, data_type, folder=folder,
+                        include_model_prefix=include_model_prefix)
 
     return data
 
 
 # -----------------------------------------------------------
 
-def load_data_bq(model_name, data_name, project, dataset):
+def load_data_bq(model_name, data_name, project, dataset,
+                 include_model_prefix=False):
     'Loads data from Google BQ.'
 
     if project is not None and dataset is not None:
@@ -703,12 +765,13 @@ def load_data_bq(model_name, data_name, project, dataset):
 def load_data(model_name, data_name, data_type, source,
               project=PROJECT_ID, dataset=GCP_DATASET,
               bucket=GCP_BUCKET, storage=GCP_STORAGE,
-              folder=None):
+              folder=None, include_model_prefix=False):
     'Loads data from either local filesystem, Google Storage or Google BQ.'
 
     ensure_model_directory_fs(model_name, folder=folder)
 
     if source == 'file':
+<<<<<<< Updated upstream
         return load_data_fs(model_name, data_name, data_type, folder=folder)
 
     elif source == 'storage':
@@ -717,6 +780,19 @@ def load_data(model_name, data_name, data_type, source,
 
     elif source == 'bq' or source == 'db':
         return load_data_bq(model_name, data_name, project, dataset)
+=======
+        return load_data_fs(model_name, data_name, data_type, folder=folder,
+                            include_model_prefix=include_model_prefix)
+
+    elif source == 'storage':
+        return load_data_gs(model_name, data_name, data_type, bucket=bucket,
+                            storage=storage, folder=folder,
+                            include_model_prefix=include_model_prefix)
+
+    elif source == 'bq' or source == 'db':
+        return load_data_bq(model_name, data_name, project, dataset,
+                            include_model_prefix=include_model_prefix)
+>>>>>>> Stashed changes
 
     else:
         logger.error(f'Error: Invalid destination {source}.')
@@ -769,12 +845,14 @@ def save_results_bq(model_name, results_name, results,
 
     if project is not None and dataset is not None:
         table_name = f'{model_name}-{data_name}'
-        table_to_bq(tdf, project=project, dataset=data_set, table_name=table_name)
+        table_to_bq(tdf, project=project, dataset=data_set,
+                    table_name=table_name)
     else:
         logger.error('Error: Must specify BQ project and dataset.')
         return False
 
 # ----------------------------------------------------------
+
 
 def save_results(model_name, results_name, data_type, results, destination,
                  project=PROJECT_ID, dataset=GCP_DATASET,
@@ -886,6 +964,7 @@ AUTH_FILE = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS', None)
 # into a DataFrame using pd.DataFrame.  Finally, we return the
 # DataFrame.
 
+
 def get_google_client(json_key_file=AUTH_FILE):
     # Define the scope of permissions
     scope = [
@@ -909,7 +988,7 @@ def get_google_sheet(url: str, json_key_file=AUTH_FILE):
 
     # Get the instance of the Spreadsheet
     try:
-    # Get the instance of the Spreadsheet
+        # Get the instance of the Spreadsheet
         sheet = client.open_by_url(url)
         # Get the first sheet of the spreadsheet
         return sheet.worksheet('Sheet1'), client
@@ -924,7 +1003,8 @@ def get_google_sheet(url: str, json_key_file=AUTH_FILE):
 def load_google_sheet(sheet_url: str, json_key_file=AUTH_FILE):
 
     # Get the instance of the Spreadsheet
-    worksheet, client = get_google_sheet(sheet_url, json_key_file=json_key_file)
+    worksheet, client = get_google_sheet(
+        sheet_url, json_key_file=json_key_file)
 
     if worksheet is not None:
         # Get all the records of the data
@@ -942,11 +1022,12 @@ def load_google_sheet(sheet_url: str, json_key_file=AUTH_FILE):
 def save_google_sheet(df, sheet_url, json_key_file=AUTH_FILE):
 
     # Get the instance of the Spreadsheet
-    worksheet, client = get_google_sheet(sheet_url, json_key_file=json_key_file)
+    worksheet, client = get_google_sheet(
+        sheet_url, json_key_file=json_key_file)
 
     # Create worksheet if needed
     if worksheet is None:
-        worksheet =  worksheet.create(sheet_url)
+        worksheet = worksheet.create(sheet_url)
 
     # Replace contents with dataframe(sheet_url
     worksheet.update([df.columns.values.tolist()] + df.values.tolist())
@@ -1008,6 +1089,7 @@ def list_files_in_folder(folder_url, json_key_file=AUTH_FILE):
 # files = list_files_in_folder('your-folder-id', 'your-json-key-file.json')
 
 # -----------------------------------------------------------
+
 
 def download_file(file_id, json_key_file, local_file_path):
     # Load the credentials

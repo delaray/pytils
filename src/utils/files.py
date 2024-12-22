@@ -52,6 +52,7 @@ def file_exists(filename):
 
 # ----------------------------------------------------------------------
 
+
 def delete_file(pathname):
     os.remove(file)
     return True
@@ -59,6 +60,7 @@ def delete_file(pathname):
 # ----------------------------------------------------------------------
 # Load and save text files as strings
 # ----------------------------------------------------------------------
+
 
 def load_text_file(pathname):
     fileptr = open(pathname, 'r')
@@ -69,11 +71,20 @@ def load_text_file(pathname):
 
 # ----------------------------------------------------------------------
 
-def save_text_file(html, pathname):
-    fileptr = open(pathname, 'w')
-    fileptr.write(html)
-    fileptr.close()
-    return True
+def save_text_file(text, filename):
+    try:
+        with open(filename, 'w') as file:
+            file.write(text)
+        print(f"Successfully wrote to {filename}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+
+# def save_text_file(html, pathname):
+#     fileptr = open(pathname, 'w')
+#     fileptr.write(html)
+#     fileptr.close()
+#     return True
 
 
 # ------------------------------------------------------------
@@ -89,7 +100,6 @@ def load_csv(filename, delimiter=',', index_col=False):
 
 
 def save_csv(df, filename, index=False):
-
     'Saves the specified CSV file using the specified parameters.'
     df.to_csv(filename, index=index)
     return True
