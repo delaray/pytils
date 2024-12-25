@@ -40,8 +40,6 @@ import logging
 # Need a better way of initilizing logger
 logger = logging.getLogger()
 
-# Ensure a value for DATA_DIR exists.
-# DATA_DIR if tryVar(DATA_DIR) is None else os.environ['DATA_DIR']
 
 # ****************************************************************
 # DATA LOCATION

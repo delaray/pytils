@@ -26,6 +26,7 @@ import nltk
 # Count Words
 # ------------------------------------------------------------
 
+
 def count_words(sentences, tokens=None, min_count=1000):
     'Return a datframe of word counts greater than min_count'
 
@@ -242,7 +243,7 @@ def scan_sentences(text):
 # ------------------------------------------------------------------
 
 def partition(tokens, partitions=2):
-    size = int(np.round(len(tokens)/partitions))
+    size = int(round(len(tokens)/partitions))
     token_sets = [tokens[i*size:(i+1)*size] for i in list(range(partitions))]
     return token_sets
 
@@ -276,6 +277,7 @@ def apply_combination_method(l1, l2, method):
 # This considers all pairs of token lists from the two specified token lists
 # and combines each pair in one of three possible ways (halving, interleaving
 # and reversing) in order to augment the data.
+
 
 def combine_token_lists(token_lists1, token_lists2, method='halving',
                         limit=None):
