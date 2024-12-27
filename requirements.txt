@@ -24,6 +24,8 @@ gsheets
 pypdf
 PyPDF2
 pdfreader
+py-pdf-parser
+pdfplumber
 Unidecode
 exchangelib
 selenium
@@ -32,6 +34,7 @@ rope
 jedi
 autopep8
 pre-commit
+ollama
 git+https://github.com/pdfminer/pdfminer.six.git@761410e66ce08f8407674a574069210a8d9d09dd
 
 

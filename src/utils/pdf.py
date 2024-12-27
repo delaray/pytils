@@ -40,13 +40,15 @@ import pandas as pd
 from unidecode import unidecode
 from datetime import datetime
 from itertools import chain
-from typing import Union
+from typing import Union, List, Dict
 
 # from pypdf import PdfReader
+import PyPDF2
 from PyPDF2 import PdfReader
 from PyPDF2._page import PageObject
 import pdfreader
 from pdfreader import PDFDocument, SimplePDFViewer
+import pdfplumber
 
 
 # Pytils Imports
@@ -108,6 +110,7 @@ def load_pdf_file(pdfname):
 
 # ----------------------------------------------------------------------------
 
+
 def load_pdf_directory(dir):
     files = files_in_dir(dir)
     return [_pdf_file(f) for f in files]
@@ -146,6 +149,7 @@ def extract_information(pdf_path):
 # Ignore Footers and Headers
 # --------------------------------------------------------------------------
 
+
 def ignore_header_and_footer(page: PageObject):
 
     parts = []
@@ -163,6 +167,7 @@ def ignore_header_and_footer(page: PageObject):
 # Join Lines
 # --------------------------------------------------------------------------
 
+
 def join_lines(lines):
 
     if lines == []:
@@ -172,7 +177,7 @@ def join_lines(lines):
     else:
         s1, s2 = lines[0], lines[1:]
 
-        for s in  s2:
+        for s in s2:
             if s1[:-1] != '-':
                 s1 = f'{s1} {s}'
             else:
@@ -183,11 +188,13 @@ def join_lines(lines):
 # Parse Abstract
 # --------------------------------------------------------------------------
 
+
 def parse_title(page: PageObject):
     text = page.extract_text()
     return text.split('\n')[0]
 
 # --------------------------------------------------------------------------
+
 
 def parse_abstract(page: PageObject):
     text = page.extract_text()
@@ -205,6 +212,7 @@ def parse_abstract(page: PageObject):
 
 EMAIL_PATTERN = '^([a-zA-Z0-9_\-\.]+)@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{2,5})$'
 
+
 def is_valid_email(email: str) -> bool:
     try:
         email.encode('utf-8')
@@ -212,7 +220,7 @@ def is_valid_email(email: str) -> bool:
         return False
 
     # Define a pattern for a well-structured email address
-    pattern =  EMAIL_PATTERN
+    pattern = EMAIL_PATTERN
 
     return True if re.match(pattern, email) else False
 
@@ -272,6 +280,7 @@ def parse_authors(page: PageObject):
 
 # Convert PDF Date format to datetime D:YYYYMMDDHHmmSS
 
+
 def convert_pdf_date(date):
     year = int(date[2:6])
     month = int(date[6:8])
@@ -288,14 +297,14 @@ def convert_pdf_date(date):
 
 def _extract_text(page):
     try:
-        return  page.extract_text()
+        return page.extract_text()
     except Exception as err:
         return None
 
 
 # --------------------------------------------------------------------------
 
-def _get_document_content(reader) -> Union[list[str]|None]:
+def _get_document_content(reader) -> Union[list[str] | None]:
     "Returns the list of document pages as strings."
 
     pages = reader.pages
@@ -305,7 +314,8 @@ def _get_document_content(reader) -> Union[list[str]|None]:
 
 # --------------------------------------------------------------------------
 
-def get_document_content(path: str) -> Union[list[str]|None]:
+
+def get_document_content(path: str) -> Union[list[str] | None]:
     "Returns the list of document pages as strings."
 
     with open(path, 'rb') as f:
@@ -315,6 +325,7 @@ def get_document_content(path: str) -> Union[list[str]|None]:
 # --------------------------------------------------------------------------
 # Document Paragraphs
 # --------------------------------------------------------------------------
+
 
 def get_paragraphs(text: str) -> list[str]:
     "Returns the list of paragraphs in text as strings."
@@ -335,7 +346,8 @@ def get_paragraphs_from_content(content: list[str]) -> Union[list[list] | list]:
     if content:
         for index, text in enumerate(content):
             paragraphs = get_paragraphs(text)
-            entries = [[paragraph, page_count, index] for paragraph in paragraphs]
+            entries = [[paragraph, page_count, index]
+                       for paragraph in paragraphs]
             results.extend(entries)
 
     return results
@@ -365,7 +377,7 @@ def get_document_metadata(path, include_content=True):
             metadata = reader.metadata
             published_date = convert_pdf_date(metadata['/CreationDate'])
             published = datetime(*published_date)
-            updated_date =  convert_pdf_date(metadata['/ModDate'])
+            updated_date = convert_pdf_date(metadata['/ModDate'])
             updated = datetime(*updated_date)
             year = published_date[0]
             month = published_date[1]
@@ -388,7 +400,7 @@ def get_document_metadata(path, include_content=True):
                 'authors': authors,
                 'parseed_authors': authors,
                 'month': month,
-                'year' : year,
+                'year': year,
                 'published': published,
                 'updated': updated,
                 'abstract': abstract,
@@ -414,7 +426,8 @@ def chunk_paragraph(sentences: str, chunk_count=None, chunk_size=1,
         remainder = len(sentences) % chunk_size
 
         # Partition into <count> chunks of <chunk_size> sentences per chunk
-        chunks = [sentences[chunk_size*i:chunk_size*(i+1)] for i in range(count)]
+        chunks = [sentences[chunk_size *
+                            i:chunk_size*(i+1)] for i in range(count)]
 
         # Add the last remaining chunk
         chunks.append(sentences[-remainder:])
@@ -425,7 +438,7 @@ def chunk_paragraph(sentences: str, chunk_count=None, chunk_size=1,
     return chunks
 
 
-# --------------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 def chunk_paragraphs(texts: list, chunk_count=None, chunk_size=None,
                      delim='. ') -> list:
@@ -447,6 +460,143 @@ def chunk_paragraphs(texts: list, chunk_count=None, chunk_size=None,
         # Return list of strings
         return list(chain(*chunks))
 
+
+# *********************************************************************
+# Parsing a PDF Book
+# ********************************************************************
+
+def parse_book(pdf_path: str):
+    """
+    Extract the table of contents and chapters from a PDF.
+
+    Args:
+        pdf_path (str): Path to the PDF file.
+
+    Returns:
+        tuple: A nested list representing the table of contents and a list of
+        chapters decomposed into paragraphs.
+    """
+    def extract_text_from_pdf(pdf_path: str) -> List[str]:
+        """Extract text from each page of the PDF."""
+        with open(pdf_path, 'rb') as f:
+            reader = PyPDF2.PdfReader(f)
+            return [page.extract_text() for page in reader.pages]
+
+    def parse_table_of_contents(pages: List[str]) -> List[List[str]]:
+        """Extract a nested list representing the table of contents."""
+        toc = []
+        start = False
+        content_start = 0
+        # Assume TOC is within the first 16 pages
+        for counter, page in enumerate(pages[:16]):
+            lines = page.split('\n')
+            for line in lines:
+                if re.match(r'^[\d\.\s]*[A-Za-z].*\d+$', line):  # Simple TOC format check
+                    start = True
+                    content_start += 1
+                    toc.append(line.strip().split())
+                else:
+                    if start is False:
+                        content_start += 1
+        return toc, content_start
+
+    def extract_chapters(pages: List[str]) -> List[List[str]]:
+        """Extract chapters and split them into paragraphs."""
+        chapters = []
+        current_chapter = []
+
+        for page in pages:
+            paragraphs = page.split('\n\n')  # Split by double newline
+            for paragraph in paragraphs:
+                paragraph = paragraph.strip()
+                if re.match(r'^(Chapter|CHAPTER)\s+\d+', paragraph):
+                    if current_chapter:
+                        chapters.append(current_chapter)
+                    current_chapter = [paragraph]  # Start a new chapter
+                elif paragraph:
+                    current_chapter.append(paragraph)
+
+        if current_chapter:
+            chapters.append(current_chapter)
+
+        return chapters
+
+    # Extract text from the PDF
+    pages = extract_text_from_pdf(pdf_path)
+
+    # Parse TOC and chapters
+    table_of_contents, content_start = parse_table_of_contents(pages)
+    chapters = extract_chapters(pages[content_start:])
+
+    return table_of_contents, chapters
+
+
+# *********************************************************************
+# PDFPUMBER Example
+# ********************************************************************
+
+def test_pdfplumber(file):
+    # Open the PDF
+    with pdfplumber.open("path/to/pdf") as pdf:
+        # Extract the text
+        text = pdf.extract_text()
+        print(f'\nLength text: {len(text)}')
+
+        # Extract the data
+        tables = pdf.extract_table()
+        print(f'\nNumber of tables: {len(tables)}')
+        # for table in tables:
+        #     print(table)
+
+        # Extract the images
+        images = pdf.get_images()
+        print(f'\nNumber of images: {len(images)}')
+        # for image in images:
+        #     print(image["page_number"])
+        #     with open(f"image_{image['page_number']}.jpg", "wb") as f:
+        #         f.write(image["data"])
+
+    return text, tables, images
+
+
+# ----------------------------------------------------------------------
+
+# https://medium.com/@mb20261/python-by-examples-extract-pdf-by-pdf-plumber-e619451ba95a
+
+def get_table_of_contents(file):
+
+    def resolve_dest(dest, doc):
+        if isinstance(dest, str):
+            dest = resolve1(doc.get_dest(dest))
+        elif isinstance(dest, PSLiteral):
+            dest = resolve1(doc.get_dest(dest.name))
+        if isinstance(dest, dict):
+            dest = dest['D']
+        if isinstance(dest, PDFObjRef):
+            dest = dest.resolve()
+        return dest
+
+    with pdfplumber.open(pdf_file) as pdf:
+        pdf_doc = pdf.doc
+        outlines = pdf_doc.get_outlines()
+
+        pages = {page.pageid: pageno for (pageno, page)
+                 in enumerate(PDFPage.create_pages(pdf_doc), 1)}
+
+        for (level, title, dest, a, se) in outlines:
+            pageno = None
+            if dest:
+                dest = resolve_dest(pdf_doc, dest)
+                pageno = pages[dest[0].objid]
+            elif a:
+                action = a
+                if isinstance(action, dict):
+                    subtype = action.get('S')
+                    if subtype and repr(subtype) == '/\'GoTo\'' and action.get(
+                            'D'):
+                        dest = resolve_dest(action['D'])
+                        pageno = pages[dest[0].objid]
+            print(f'level={level}, title={title}')
 
 # *********************************************************************
 # End of File
