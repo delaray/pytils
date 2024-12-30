@@ -30,6 +30,7 @@ pdfminer
 Unidecode
 exchangelib
 selenium
+transformers
 mypy
 rope
 jedi
