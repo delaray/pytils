@@ -6,6 +6,7 @@ import os
 import re
 import email
 import requests
+from urllib.parse import urlencode
 import msal
 import imaplib
 from email.header import decode_header
@@ -288,6 +289,72 @@ def move_hotmail_message(message, to_folder=None, user=HOTMAIL_USER,
 #             f.write(attachment.content)
 #     item.move(to_folder)
 
+# ****************************************************************
+# Microsoft Graph API
+# ****************************************************************
+
+# https://stackoverflow.com/questions/78688831/getting-invalidauthenticationtoken-error-while-making-microsoft-graph-api-reques
+
+# Example below from ChatGPT query:
+# In using the Microsoft Graph API, how can I get the access token using 
+# authorization grant flow, implicit flow or ROPC flow where user need to
+# sign in to get the access token in order to use the /me endpoint from
+# my Python code.
+
+def ms_graph_auth(client_id=AZURE_CLIENT_ID,
+                  client_secret=AZURE_CLIENT_SECRET,
+                  tenant_id=AZURE_TENANT_ID,
+                  username=f"{HOTMAIL_USER}@hotmail.com",
+                  password=HOTMAIL_PWD):
+    
+    # Step 1: Define credentials
+    token_endpoint = f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token"
+
+    # Step 2: Request the access token using ROPC
+    token_data = {
+        'grant_type': 'password',
+        'client_id': client_id,
+        'client_secret': client_secret,
+        'username': username,
+        'password': password,
+        'scope': 'User.Read',
+    }
+    response = requests.post(token_endpoint, data=token_data)
+    tokens = response.json()
+    access_token = tokens.get('access_token')
+
+    # Step 3: Use the access token to call the Microsoft Graph API
+    headers = {'Authorization': f'Bearer {access_token}'}
+    response = requests.get('https://graph.microsoft.com/v1.0/me', headers=headers)
+    print(response.json())
+    
+    return access_token
+
+
+# Stckoverflow
+# https://stackoverflow.com/questions/78569353/azuread-oidc-access-token-from-https-sts-windows-net-is-not-a-jwt-token
+
+def test_msal(client_id=AZURE_CLIENT_ID,
+              client_secret=AZURE_CLIENT_SECRET,
+              tenant_id=AZURE_TENANT_ID,
+              username=f"{HOTMAIL_USER}@hotmail.com",
+              password=HOTMAIL_PWD):
+    
+    msal_app = msal.ConfidentialClientApplication(
+        client_id=client_id,
+        client_credential=client_secret,
+        # Force OAuth2 v1.0
+        oidc_authority=f"https://login.microsoftonline.com/{tenant_id}",  
+        )
+    
+    flow = msal_app.initiate_auth_code_flow(scopes=["User.Read"], redirect_uri="zzz")
+
+    payload = msal_app.acquire_token_by_auth_code_flow(flow, {})
+    
+    headers = {'Authorization': f'Bearer {payload["access_token"]}'}
+    response = requests.get('https://graph.microsoft.com/v1.0/me', headers=headers)
+    
+    return response.json()
 
 # -----------------------------------------------------------------
 # GET Microsoft AZURE EMAILS
@@ -312,9 +379,7 @@ def get_ms_emails(sender_email, client_id=AZURE_CLIENT_ID,
 
     if 'access_token' in result:
         # Set up the request headers with the access token
-        headers = {
-            'Authorization': 'Bearer ' + result['access_token']
-        }
+        headers = {'Authorization': 'Bearer ' + result['access_token']}
 
         # Define the API endpoint to search for emails from a specific sender
         # Using $filter in Microsoft Graph API to specify the sender
