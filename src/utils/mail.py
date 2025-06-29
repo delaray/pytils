@@ -9,7 +9,11 @@ import requests
 from urllib.parse import urlencode
 import msal
 import imaplib
+import ssl
+import smtplib
 from email.header import decode_header
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from exchangelib import Credentials, Account, Configuration, DELEGATE
 
 
@@ -40,7 +44,7 @@ def send_email(receiver_email, subject, content,
                sender_email=GMAIL_EMAIL,
                sender_pwd=GMAIL_PWD):
      # For SSL
-    port = GMAIL_OUTGOING_PORT
+    port = GMAIL_SMTP_PORT
     smtp_server = GMAIL_SMTP_SERVER
 
 
@@ -360,53 +364,123 @@ def test_msal(client_id=AZURE_CLIENT_ID,
 # GET Microsoft AZURE EMAILS
 # -----------------------------------------------------------------
 
-def get_ms_emails(sender_email, client_id=AZURE_CLIENT_ID,
-                  tenant_id=AZURE_TENANT_ID,
-                  client_secret=AZURE_CLIENT_SECRET,
-                  retries=3):
+def get_ms_access_token(client_id=AZURE_CLIENT_ID, use_device_flow=False):
+    """
+    Get access token for Microsoft Graph API using either interactive or device code flow.
+
+    Args:
+        client_id: Azure application client ID
+        use_device_flow: If True, uses device code flow; otherwise uses interactive flow
+
+    Returns:
+        Access token string or None if authentication fails
+    """
+
+    # Use 'common' for personal Microsoft accounts
+    authority = 'https://login.microsoftonline.com/common'
+
+    # Set up the MSAL app for public client
+    app = msal.PublicClientApplication(
+        client_id,
+        authority=authority
+    )
+
+    # Required scopes for reading emails
+    scopes = ['https://graph.microsoft.com/Mail.Read']
+
+    # Try to get token silently first (from cache)
+    accounts = app.get_accounts()
+    result = None
+
+    if accounts:
+        # Try to get token silently for the first account
+        result = app.acquire_token_silent(scopes, account=accounts[0])
+
+    if not result:
+        if use_device_flow:
+            # Device code flow - better for headless environments
+            print("Starting device code authentication...")
+            flow = app.initiate_device_flow(scopes=scopes)
+
+            if "user_code" not in flow:
+                raise ValueError(f"Failed to create device flow: {flow}")
+
+            print(flow["message"])
+
+            # Wait for the user to authenticate
+            result = app.acquire_token_by_device_flow(flow)
+        else:
+            # Interactive authentication
+            print("Interactive authentication required. Please sign in...")
+            result = app.acquire_token_interactive(scopes=scopes)
+
+    if 'access_token' in result:
+        return result['access_token']
+    else:
+        print("Authentication failed:")
+        print("Error:", result.get("error"))
+        print("Error description:", result.get("error_description"))
+        return None
+
+def get_ms_emails(sender_email, client_id=AZURE_CLIENT_ID, use_device_flow=False):
+    """
+    Get emails from Microsoft Graph API using proper authentication flow.
+
+    Args:
+        sender_email: Email address to filter messages by sender
+        client_id: Azure application client ID
+        use_device_flow: If True, uses device code flow instead of interactive flow
+
+    Returns:
+        List of email messages or None if error occurs
+    """
+
+    # Get access token
+    access_token = get_ms_access_token(client_id=client_id, use_device_flow=use_device_flow)
+
+    if not access_token:
+        return None
+
     # Microsoft Graph API endpoint
     graph_api_endpoint = 'https://graph.microsoft.com/v1.0'
 
-    # Set up the MSAL app
-    app = msal.ConfidentialClientApplication(
-        client_id,
-        authority=f'https://login.microsoftonline.com/{tenant_id}',
-        client_credential=client_secret)
+    # Set up the request headers with the access token
+    headers = {'Authorization': f'Bearer {access_token}'}
 
-    # Acquire a token
-    scopes = ['https://graph.microsoft.com/.default']
-    result = app.acquire_token_for_client(scopes=scopes)
+    # Define the API endpoint to search for emails from a specific sender
+    # Using $filter in Microsoft Graph API to specify the sender
+    filter_query = f"from/emailAddress/address eq '{sender_email}'"
+    messages_endpoint = f"{graph_api_endpoint}/me/messages?$filter={filter_query}"
 
-    if 'access_token' in result:
-        # Set up the request headers with the access token
-        headers = {'Authorization': 'Bearer ' + result['access_token']}
-
-        # Define the API endpoint to search for emails from a specific sender
-        # Using $filter in Microsoft Graph API to specify the sender
-        path = '/me/messages?$filter=from/emailAddress/address eq'
-
-        messages_endpoint = f"{graph_api_endpoint}{path} '{sender_email}'"
-
+    try:
         # Make the GET request
         response = requests.get(messages_endpoint, headers=headers)
 
         if response.status_code == 200:
             # Process the email data
             messages = response.json().get('value', [])
+            print(f"Found {len(messages)} messages from {sender_email}")
+
             for message in messages:
                 print("Subject:", message.get('subject'))
-                print("From:", message.get('from').get('emailAddress').get('address'))
+                print("From:", message.get('from', {}).get('emailAddress', {}).get('address'))
                 print("Received Date:", message.get('receivedDateTime'))
                 print("Body Preview:", message.get('bodyPreview'))
                 print("\n---\n")
-                break
+
             return messages
         else:
-            print("Error:", response.status_code, response.json())
+            print(f"Error: {response.status_code}")
+            if response.content:
+                try:
+                    error_details = response.json()
+                    print("Error details:", error_details)
+                except:
+                    print("Raw error:", response.text)
             return None
-    else:
-        print("Authentication failed:", result.get("error"),
-              result.get("error_description"))
+
+    except requests.RequestException as e:
+        print(f"Request failed: {e}")
         return None
 
 

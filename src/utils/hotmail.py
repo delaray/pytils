@@ -77,8 +77,8 @@ def get_emails_from_sender(username, password, sender_email, mailbox="inbox"):
 
 def test_hotmail(sender='daily_papers_digest@notifications.huggingface.com',
                user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
-    
-    
+
+
     user_email = f'{user}.hotmail.com'
     # Replace these with your actual Hotmail credentials and the sender's email address
     USERNAME = f'{user}.hotmail.com'
@@ -96,7 +96,7 @@ def test_hotmail(sender='daily_papers_digest@notifications.huggingface.com',
             subject = subject.decode(encoding if encoding else "utf-8", errors="replace")
         print(f"Email {i}: {subject}")
 
-    
+
 # Example usage:
 if __name__ == "__main__":
     test_hotmail()
