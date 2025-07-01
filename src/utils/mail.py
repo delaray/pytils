@@ -364,19 +364,28 @@ def test_msal(client_id=AZURE_CLIENT_ID,
 # GET Microsoft AZURE EMAILS
 # -----------------------------------------------------------------
 
-def get_ms_access_token(client_id=AZURE_CLIENT_ID, use_device_flow=False):
+def get_ms_access_token(client_id=None, use_device_flow=False):
     """
     Get access token for Microsoft Graph API using either interactive or device code flow.
+    
+    If no client_id is provided, it will use Microsoft's well-known client ID for 
+    development/testing purposes.
 
     Args:
-        client_id: Azure application client ID
+        client_id: Azure application client ID (optional)
         use_device_flow: If True, uses device code flow; otherwise uses interactive flow
 
     Returns:
         Access token string or None if authentication fails
     """
-
-    # Use 'common' for personal Microsoft accounts
+    
+    # Use Microsoft's well-known client ID if none provided
+    # This is specifically for personal Microsoft accounts
+    if not client_id:
+        # Microsoft Graph PowerShell client ID - allows personal accounts
+        client_id = "14d82eec-204b-4c2f-b7e8-296a70dab67e"
+    
+    # Use 'common' for both personal and work accounts
     authority = 'https://login.microsoftonline.com/common'
 
     # Set up the MSAL app for public client
@@ -420,15 +429,18 @@ def get_ms_access_token(client_id=AZURE_CLIENT_ID, use_device_flow=False):
         print("Authentication failed:")
         print("Error:", result.get("error"))
         print("Error description:", result.get("error_description"))
+        if result.get("error") == "invalid_client":
+            print("\nTIP: Try using the default Microsoft client by calling:")
+            print("get_ms_emails(sender_email, client_id=None)")
         return None
 
-def get_ms_emails(sender_email, client_id=AZURE_CLIENT_ID, use_device_flow=False):
+def get_ms_emails(sender_email, client_id=None, use_device_flow=False):
     """
     Get emails from Microsoft Graph API using proper authentication flow.
 
     Args:
         sender_email: Email address to filter messages by sender
-        client_id: Azure application client ID
+        client_id: Azure application client ID (None to use Microsoft's default)
         use_device_flow: If True, uses device code flow instead of interactive flow
 
     Returns:
@@ -481,6 +493,141 @@ def get_ms_emails(sender_email, client_id=AZURE_CLIENT_ID, use_device_flow=False
 
     except requests.RequestException as e:
         print(f"Request failed: {e}")
+        return None
+
+
+# -----------------------------------------------------------------
+# FALLBACK: IMAP with OAuth2 for Outlook
+# -----------------------------------------------------------------
+
+def get_ms_emails_imap_oauth2(sender_email, client_id=None, use_device_flow=True):
+    """
+    Fallback method: Get emails using IMAP with OAuth2 authentication.
+    This method works when Graph API access is restricted.
+    
+    Args:
+        sender_email: Email address to filter messages by sender
+        client_id: Azure application client ID (None to use Microsoft's default)
+        use_device_flow: If True, uses device code flow (recommended for IMAP)
+    
+    Returns:
+        List of email data dictionaries or None if error occurs
+    """
+    
+    # Get access token with IMAP scope
+    access_token = get_ms_imap_access_token(client_id=client_id, use_device_flow=use_device_flow)
+    
+    if not access_token:
+        return None
+    
+    try:
+        # Connect to Outlook IMAP server with OAuth2
+        imap = imaplib.IMAP4_SSL("outlook.office365.com", 993)
+        
+        # Authenticate using OAuth2
+        auth_string = f"user={HOTMAIL_USER}@hotmail.com\x01auth=Bearer {access_token}\x01\x01"
+        imap.authenticate('XOAUTH2', lambda x: auth_string.encode())
+        
+        # Select inbox
+        imap.select('INBOX')
+        
+        # Search for emails from specific sender
+        search_criteria = f'FROM "{sender_email}"'
+        status, messages = imap.search(None, search_criteria)
+        
+        if status != "OK":
+            print(f"Search failed: {status}")
+            return None
+        
+        email_ids = messages[0].split()
+        email_list = []
+        
+        print(f"Found {len(email_ids)} messages from {sender_email}")
+        
+        # Fetch each email
+        for email_id in email_ids[-10:]:  # Get last 10 emails
+            status, msg_data = imap.fetch(email_id, "(RFC822)")
+            if status != "OK":
+                continue
+                
+            # Parse email
+            msg = email.message_from_bytes(msg_data[0][1])
+            
+            # Decode subject
+            subject, encoding = decode_header(msg["subject"])[0]
+            if isinstance(subject, bytes):
+                subject = subject.decode(encoding if encoding else "utf-8")
+            
+            # Get email info
+            email_info = {
+                'subject': subject,
+                'from': msg.get('from'),
+                'date': msg.get('date'),
+                'message_id': msg.get('message-id')
+            }
+            
+            email_list.append(email_info)
+            
+            print("Subject:", subject)
+            print("From:", msg.get('from'))
+            print("Date:", msg.get('date'))
+            print("---")
+        
+        imap.logout()
+        return email_list
+        
+    except Exception as e:
+        print(f"IMAP OAuth2 authentication failed: {e}")
+        return None
+
+
+def get_ms_imap_access_token(client_id=None, use_device_flow=True):
+    """
+    Get access token specifically for IMAP access to Outlook.
+    """
+    
+    # Use Microsoft's well-known client ID if none provided
+    if not client_id:
+        # Microsoft Graph PowerShell client ID
+        client_id = "14d82eec-204b-4c2f-b7e8-296a70dab67e"
+    
+    authority = 'https://login.microsoftonline.com/common'
+    
+    app = msal.PublicClientApplication(
+        client_id,
+        authority=authority
+    )
+    
+    # IMAP and Mail.Read scopes
+    scopes = ['https://outlook.office.com/IMAP.AccessAsUser.All']
+    
+    # Try to get token silently first
+    accounts = app.get_accounts()
+    result = None
+    
+    if accounts:
+        result = app.acquire_token_silent(scopes, account=accounts[0])
+    
+    if not result:
+        if use_device_flow:
+            print("Starting device code authentication for IMAP...")
+            flow = app.initiate_device_flow(scopes=scopes)
+            
+            if "user_code" not in flow:
+                raise ValueError(f"Failed to create device flow: {flow}")
+            
+            print(flow["message"])
+            result = app.acquire_token_by_device_flow(flow)
+        else:
+            print("Interactive authentication required for IMAP...")
+            result = app.acquire_token_interactive(scopes=scopes)
+    
+    if 'access_token' in result:
+        return result['access_token']
+    else:
+        print("IMAP authentication failed:")
+        print("Error:", result.get("error"))
+        print("Error description:", result.get("error_description"))
         return None
 
 
