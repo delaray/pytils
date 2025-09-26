@@ -2,6 +2,19 @@
 # EMAIL UTILITIES
 # ****************************************************************
 
+# File contents:
+
+# 1. Email Accounts
+# 2. Sending Email
+# 3. Retrieving Emails
+# 4. Microsoft Exchange Server
+# 5. Microsoft Graph API
+# 6. FALLBACK: IMAP with OAuth2 for Outlook
+# 7. Message Properties and Content
+
+# ****************************************************************
+
+
 import os
 import re
 import email
@@ -142,7 +155,7 @@ def get_emails_from_sender(sender_email, user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
 
 
 # ****************************************************************
-# Microsoft Exchange Server
+# Part 4: Microsoft Exchange Server
 # ****************************************************************
 
 # -----------------------------------------------------------------
@@ -294,7 +307,7 @@ def move_hotmail_message(message, to_folder=None, user=HOTMAIL_USER,
 #     item.move(to_folder)
 
 # ****************************************************************
-# Microsoft Graph API
+# Part 5: Microsoft Graph API
 # ****************************************************************
 
 # https://stackoverflow.com/questions/78688831/getting-invalidauthenticationtoken-error-while-making-microsoft-graph-api-reques
@@ -359,6 +372,7 @@ def test_msal(client_id=AZURE_CLIENT_ID,
     response = requests.get('https://graph.microsoft.com/v1.0/me', headers=headers)
 
     return response.json()
+
 
 # -----------------------------------------------------------------
 # GET Microsoft AZURE EMAILS
@@ -434,6 +448,8 @@ def get_ms_access_token(client_id=None, use_device_flow=False):
             print("get_ms_emails(sender_email, client_id=None)")
         return None
 
+# -----------------------------------------------------------------
+
 def get_ms_emails(sender_email, client_id=None, use_device_flow=False):
     """
     Get emails from Microsoft Graph API using proper authentication flow.
@@ -496,9 +512,9 @@ def get_ms_emails(sender_email, client_id=None, use_device_flow=False):
         return None
 
 
-# -----------------------------------------------------------------
-# FALLBACK: IMAP with OAuth2 for Outlook
-# -----------------------------------------------------------------
+# *****************************************************************
+# Part 6:FALLBACK: IMAP with OAuth2 for Outlook
+# *****************************************************************
 
 def get_ms_emails_imap_oauth2(sender_email, client_id=None, use_device_flow=True):
     """
@@ -663,6 +679,10 @@ def get_message_urls(message):
 
     return urls
 
+
+# ****************************************************************
+# Part 7: Message Properties and Content
+# ****************************************************************
 
 # -----------------------------------------------------------------
 # Message Properties
