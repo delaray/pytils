@@ -22,6 +22,8 @@ import os
 import re
 import email
 import requests
+import base64
+import json
 # from urllib.parse import urlencode
 import msal
 import imaplib
@@ -31,7 +33,6 @@ from dotenv import load_dotenv
 from email.header import decode_header
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from exchangelib import Credentials, Account, Configuration, DELEGATE
 
 
 load_dotenv()
@@ -58,11 +59,15 @@ GMAIL_SMTP_PORT = os.environ.get('GMAIL_SMTP_PORT', 465)
 
 # sender_email = "babar.system@gmail.com"
 
-def send_email(receiver_email, subject, content,
-               sender_email=GMAIL_EMAIL,
-               sender_pwd=GMAIL_PWD):
+def send_email(receiver_email: str,
+               subject: str,
+               content: str,
+               sender_email: str,
+               sender_pwd: str):
+
     # For SSL
     port = GMAIL_SMTP_PORT
+    port = int(port) if port else 465
     smtp_server = GMAIL_SMTP_SERVER
 
     message = MIMEMultipart("alternative")
@@ -104,7 +109,7 @@ def get_emails_from_sender(sender_email, user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
 
     # Set up the IMAP client
     imap = imaplib.IMAP4_SSL("outlook.office365.com")
-    imap_port = 993
+    # imap_port = 993
 
     # Login to the account
     imap.login(email, f'"{pwd}"')
@@ -209,12 +214,10 @@ def get_token_interactive(client_id=MS_HOTMAIL_CLIENT_ID,
 # Get MS Hotmail Messages
 # -----------------------------------------------------------------
 
-# -----------------------------------------------------------------
 
 def get_hotmail_messages(access_token, top=25):
 
     url = f"https://graph.microsoft.com/v1.0/me/messages"
-    scopes = ["Mail.Read"]
 
     headers = {"Authorization": f"Bearer {access_token}"}
     params = {"$top": top, "$select": "subject,from,receivedDateTime"}
@@ -225,10 +228,12 @@ def get_hotmail_messages(access_token, top=25):
     return response.json().get("value", [])
 
 
-def get_hotmail_messages_from_sender(access_token, sender_email, top=100):
+def get_hotmail_messages_from_sender(sender_email, access_token,
+                                     top=None):
     """
     Retrieve recent messages from a specific sender.
     """
+    top = top or 100
     url = "https://graph.microsoft.com/v1.0/me/messages"
     headers = {"Authorization": f"Bearer {access_token}"}
     params = {
@@ -266,6 +271,38 @@ def get_hotmail_message_content(access_token, message_id):
     }
 
 
+# ------------------------------------------------------------------
+# List Hotmail Folders
+# ------------------------------------------------------------------
+
+def list_hotmail_folders(access_token):
+
+    url = "https://graph.microsoft.com/v1.0/me/mailFolders"
+    headers = {"Authorization": f"Bearer {access_token}"}
+    resp = requests.get(url, headers=headers)
+    resp.raise_for_status()
+
+    return resp.json()["value"]
+
+
+# ------------------------------------------------------------------
+# Move Hotmail Message to another folder
+# ------------------------------------------------------------------
+
+def move_hotmail_message(access_token, message_id, destination_folder_id):
+
+    url = f"https://graph.microsoft.com/v1.0/me/messages/{message_id}/move"
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+    data = {"destinationId": destination_folder_id}
+    resp = requests.post(url, headers=headers, json=data)
+    resp.raise_for_status()
+
+    return resp.json()
+
+
 # -----------------------------------------------------------------
 # MS Graph API Authentication (Using token cache)
 # -----------------------------------------------------------------
@@ -283,16 +320,29 @@ def load_cache():
     if os.path.exists(CACHE_FILE):
         with open(CACHE_FILE, "r") as f:
             cache.deserialize(f.read())
-    return cache\
+    return cache
 
-def get_token_silent():
+
+def save_cache(cache, cache_file=CACHE_FILE):
+    if cache.has_state_changed:
+        with open(cache_file, "w") as f:
+            f.write(cache.serialize())
+
+
+def get_token_silent(client_id=MS_HOTMAIL_CLIENT_ID,
+                     authority=MS_HOTMAIL_AUTHORITY,
+                     scopes=MS_HOTMAIL_SCOPES):
+    """
+    Get an access token using silent authentication with token cache.
+    """
     cache = load_cache()
-    app = msal.PublicClientApplication(MS_HOTMAIL_CLIENT_ID,
-                                       authority=MS_HOTMAIL_AUTHORITY,
+
+    app = msal.PublicClientApplication(client_id,
+                                       authority=authority,
                                        token_cache=cache)
 
     # Try silent first
-    result = app.acquire_token_silent(SCOPES, account=None)
+    result = app.acquire_token_silent(scopes, account=None)
 
     if not result:
         # Fallback to device code flow
@@ -306,8 +356,25 @@ def get_token_silent():
         raise Exception(f"Token acquisition failed: {result}")
 
     save_cache(cache)
+
     return result["access_token"]
 
+
+# -----------------------------------------------------------------
+# Decode JSON Web Token (JWT)
+# -----------------------------------------------------------------
+
+def decode_jwt(token):
+    # Split token into 3 parts
+    parts = token.split(".")
+    if len(parts) < 2:
+        raise ValueError("Not a valid JWT")
+
+    # Decode payload (2nd part)
+    payload = parts[1] + "=="  # pad
+    decoded = base64.urlsafe_b64decode(payload)
+    data = json.loads(decoded)
+    return data
 
 # *****************************************************************
 # Part 6:FALLBACK: IMAP with OAuth2 for Outlook
