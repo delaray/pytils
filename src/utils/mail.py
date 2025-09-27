@@ -174,7 +174,7 @@ def get_emails_from_sender(sender_email, user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
 MS_HOTMAIL_TENANT = "consumers"
 
 # From app registration
-MS_HOTMAIL_CLIENT_ID = "939a2318-2320-4626-94de-f637351b720e"  
+MS_HOTMAIL_CLIENT_ID = "939a2318-2320-4626-94de-f637351b720e"
 
 MS_HOTMAIL_AUTHORITY = "https://login.microsoftonline.com/consumers"
 
@@ -245,7 +245,7 @@ def get_ms_message_content(access_token, message_id):
     resp = requests.get(url, headers=headers, params=params)
     resp.raise_for_status()
     msg = resp.json()
-    
+
     return {
         "id": msg["id"],
         "subject": msg["subject"],
