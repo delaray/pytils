@@ -181,20 +181,26 @@ MS_HOTMAIL_AUTHORITY = "https://login.microsoftonline.com/consumers"
 MS_HOTMAIL_SCOPES = ["Mail.Read"]
 
 
-def get_token_interactive():
-    app = \
-        msal.PublicClientApplication(MS_HOTMAIL_CLIENT_ID,
-                                     authority=MS_HOTMAIL_AUTHORITY)
+def get_token_interactive(client_id=MS_HOTMAIL_CLIENT_ID,
+                          authority=MS_HOTMAIL_AUTHORITY):
+    """
+    Get an access token using device code flow for Microsoft Graph API.
+    """
+
+    app = msal.PublicClientApplication(client_id, authority=authority)
 
     # Acquire token using device code flow
     flow = app.initiate_device_flow(scopes=MS_HOTMAIL_SCOPES)
     if "user_code" not in flow:
         raise Exception("Failed to create device flow. Check app registration.")
 
-    print(flow["message"])  # Instructs you to visit a URL and enter a code
+    # Instructs you to visit a URL and enter a code
+    print(flow["message"])
     result = app.acquire_token_by_device_flow(flow)
+
     if "access_token" in result:
-        return result
+        return result['access_token']
+
     else:
         raise Exception(f"Failed to acquire token: {result}")
 
@@ -203,7 +209,23 @@ def get_token_interactive():
 # Get MS Hotmail Messages
 # -----------------------------------------------------------------
 
-def get_messages_from_sender(access_token, sender_email, top=100):
+# -----------------------------------------------------------------
+
+def get_hotmail_messages(access_token, top=25):
+
+    url = f"https://graph.microsoft.com/v1.0/me/messages"
+    scopes = ["Mail.Read"]
+
+    headers = {"Authorization": f"Bearer {access_token}"}
+    params = {"$top": top, "$select": "subject,from,receivedDateTime"}
+
+    response = requests.get(url, headers=headers, params=params)
+    response.raise_for_status()
+
+    return response.json().get("value", [])
+
+
+def get_hotmail_messages_from_sender(access_token, sender_email, top=100):
     """
     Retrieve recent messages from a specific sender.
     """
@@ -221,21 +243,10 @@ def get_messages_from_sender(access_token, sender_email, top=100):
 
 
 # -----------------------------------------------------------------
-
-def get_hotmail_messages(access_token, top=25):
-    url = f"https://graph.microsoft.com/v1.0/users/me/messages"
-    headers = {"Authorization": f"Bearer {access_token}"}
-    params = {"$top": top, "$select": "subject,from,receivedDateTime"}
-    response = requests.get(url, headers=headers, params=params)
-    response.raise_for_status()
-    return response.json().get("value", [])
-
-
-# -----------------------------------------------------------------
 # Get MS Hotmail Message Content
 # -----------------------------------------------------------------
 
-def get_ms_message_content(access_token, message_id):
+def get_hotmail_message_content(access_token, message_id):
     """
     Retrieve the subject, sender, and full body content of a message by ID.
     """
@@ -272,14 +283,7 @@ def load_cache():
     if os.path.exists(CACHE_FILE):
         with open(CACHE_FILE, "r") as f:
             cache.deserialize(f.read())
-    return cache
-
-
-def save_cache(cache):
-    if cache.has_state_changed:
-        with open(CACHE_FILE, "w") as f:
-            f.write(cache.serialize())
-
+    return cache\
 
 def get_token_silent():
     cache = load_cache()
