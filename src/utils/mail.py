@@ -7,28 +7,34 @@
 # 1. Email Accounts
 # 2. Sending Email
 # 3. Retrieving Emails
-# 4. Microsoft Exchange Server
-# 5. Microsoft Graph API
-# 6. FALLBACK: IMAP with OAuth2 for Outlook
-# 7. Message Properties and Content
+# 4. Microsoft Graph API
+# 5. FALLBACK: IMAP with OAuth2 for Outlook
+# 6. Message Properties and Content
+
+# ----------------------------------------------------------------
+
+# Old Method (commented out):
+# Microsoft Exchange Server (Exchangelib)
 
 # ****************************************************************
-
 
 import os
 import re
 import email
 import requests
-from urllib.parse import urlencode
+# from urllib.parse import urlencode
 import msal
 import imaplib
 import ssl
 import smtplib
+from dotenv import load_dotenv
 from email.header import decode_header
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from exchangelib import Credentials, Account, Configuration, DELEGATE
 
+
+load_dotenv()
 
 # ********************************************************************************
 # Part 1: Email Accounts
@@ -40,26 +46,24 @@ HOTMAIL_SERVER = "outlook.office365.com"
 
 # -----------------------------------------------------------------
 
-GMAIL_EMAIL = "raymond.delacaze@gmail.com"
-GMAIL_PWD = os.environ.get('GMAIL_PWD', 'XXXXX')
-GMAIL_SMTP_SERVER = "smtp.gmail.com"
-GMAIL_SMTP_PORT = 465
+GMAIL_EMAIL = os.environ.get('GMAIL_EMAIL', 'raymond.delacaze@gmail.com')
+GMAIL_PWD = os.environ.get('GMAIL_PWD')
+GMAIL_SMTP_SERVER = os.environ.get('GMAIL_SMTP_SERVER', 'smtp.gmail.com')
+GMAIL_SMTP_PORT = os.environ.get('GMAIL_SMTP_PORT', 465)
 
-AZURE_CLIENT_ID = os.environ.get('AZURE_CLIENT_ID')
-AZURE_TENANT_ID = os.environ.get('AZURE_TENANT_ID')
-AZURE_CLIENT_SECRET = os.environ.get('AZURE_CLIENT_SECRET')
 
 # ********************************************************************************
 # Part 2: Sending Email
 # ********************************************************************************
 
+# sender_email = "babar.system@gmail.com"
+
 def send_email(receiver_email, subject, content,
                sender_email=GMAIL_EMAIL,
                sender_pwd=GMAIL_PWD):
-     # For SSL
+    # For SSL
     port = GMAIL_SMTP_PORT
     smtp_server = GMAIL_SMTP_SERVER
-
 
     message = MIMEMultipart("alternative")
     message["Subject"] = subject
@@ -80,8 +84,6 @@ def send_email(receiver_email, subject, content,
         print("Unable to send mail: " + str(e))
         return False
 
-
-# sender_email = "babar.system@gmail.com"
 
 # ********************************************************************************
 # Part 2: Retrieving Emails
@@ -133,6 +135,7 @@ def get_emails_from_sender(sender_email, user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
     # Logout and close the connection
     imap.logout()
 
+
 # Usage:
 # get_emails_from_sender("specific-sender@example.com")
 
@@ -153,363 +156,153 @@ def get_emails_from_sender(sender_email, user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
 # interacting with Outlook/Hotmail, as they might provide a more robust
 # and user-friendly interface for this task.
 
-
 # ****************************************************************
-# Part 4: Microsoft Exchange Server
+# Part 3: Microsoft Graph API
 # ****************************************************************
 
-# -----------------------------------------------------------------
-# Get  Hotmail Account
-# -----------------------------------------------------------------
+# Graph Reader APP:
 
-def get_hotmail_account(user=HOTMAIL_USER, pwd=HOTMAIL_PWD,
-                        server=HOTMAIL_SERVER, retries=3):
-    'Returns an exchangelib account object for the specified user and pwd.'
-
-    for i in range(retries):
-        success = True
-        try:
-            user_email = 'delaray@hotmail.com'
-            credentials = Credentials(user_email, pwd)
-
-            config = Configuration(server=server, credentials=credentials)
-
-            account = Account(primary_smtp_address=user_email,
-                              # credentials=credentials,
-                              config=config,
-                              autodiscover=False,
-                              access_type=DELEGATE)
-            return account
-
-        except Exception as err:
-            print(f'Attempt {i+1}: Error getting Hotmail account. {err}')
-            success = False
-
-    print(f'Error retrieving Hotmail account after {retries}\n')
+# https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/
+# ApplicationMenuBlade/~/Overview/appId/939a2318-2320-4626-94de-f637351b720e/
+# isMSAApp~/false
 
 # -----------------------------------------------------------------
-
-# from exchangelib import (
-#     Account,
-#     Configuration,
-#     OAuth2Credentials,
-#     DELEGATE,
-#     OAUTH2,
-# )
-# from os import environ
-
-# username = environ["USERNAME"]
-# client_id = environ["CLIENT_ID"]
-# tenant_id = environ["TENANT_ID"]
-# secret_value = environ["VALUE"]
-
-# credentials = OAuth2Credentials(
-#     client_id=client_id, tenant_id=tenant_id, client_secret=secret_value
-# )
-# conf = Configuration(
-#     credentials=credentials, server="outlook.office365.com", auth_type=OAUTH2
-# )
-# account = Account(
-#     primary_smtp_address=username,
-#     autodiscover=False,
-#     config=conf,
-#     access_type=DELEGATE,
-# )
-
-# -----------------------------------------------------------------
-# Get  Hotmail Messages
+# MS Graph API Authentication (Using device code flow)
 # -----------------------------------------------------------------
 
-def get_hotmail_messages(sender_email, user=HOTMAIL_USER, pwd=HOTMAIL_PWD,
-                         retries=3):
+# Use "consumers" for personal Hotmail/Outlook.com accounts
+MS_HOTMAIL_TENANT = "consumers"
 
-    account = get_hotmail_account(user=user, pwd=pwd, retries=retries)
+# From app registration
+MS_HOTMAIL_CLIENT_ID = "939a2318-2320-4626-94de-f637351b720e"  
 
-    if account is not None:
-        # Try a few times to avoid occasional TokenExpiredError due
-        # to value computed before the lock was acquired.
-        for i in range(retries):
-            success = True
-            try:
-                folder = account.inbox
-                items = folder.filter(sender=sender_email)
-                messages = list(items)
-                return messages
-            except Exception as err:
-                print(f'Error {i+1} retrieving Hotmail messages.\n{err}\nRetrying...')
-                success = False
-        print(f'Error retrieving Hotmail messages for {sender_email}\n')
-        return None
+MS_HOTMAIL_AUTHORITY = "https://login.microsoftonline.com/consumers"
 
+MS_HOTMAIL_SCOPES = ["Mail.Read"]
+
+
+def get_token_interactive():
+    app = \
+        msal.PublicClientApplication(MS_HOTMAIL_CLIENT_ID,
+                                     authority=MS_HOTMAIL_AUTHORITY)
+
+    # Acquire token using device code flow
+    flow = app.initiate_device_flow(scopes=MS_HOTMAIL_SCOPES)
+    if "user_code" not in flow:
+        raise Exception("Failed to create device flow. Check app registration.")
+
+    print(flow["message"])  # Instructs you to visit a URL and enter a code
+    result = app.acquire_token_by_device_flow(flow)
+    if "access_token" in result:
+        return result
     else:
-        return None
+        raise Exception(f"Failed to acquire token: {result}")
 
 
 # -----------------------------------------------------------------
-# Move Hotmail message
+# Get MS Hotmail Messages
 # -----------------------------------------------------------------
 
-def get_processed_mail_folder(account):
-    return account.root//'Top of Information Store'//'Aiscape'//'Processed'
-
-
-# -----------------------------------------------------------------
-
-def move_message_to_processed(message, user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
-    account = get_hotmail_account(user=user, pwd=pwd)
-    to_folder = get_processed_mail_folder(account)
-    status = move_hotmail_message(message, to_folder=to_folder,
-                                  user=user, pwd=pwd)
-    return status
-
-
-# -----------------------------------------------------------------
-
-def move_hotmail_message(message, to_folder=None, user=HOTMAIL_USER,
-                         pwd=HOTMAIL_PWD):
-
-    try:
-        account = get_hotmail_account(user=user, pwd=pwd)
-        if to_folder is None:
-            to_folder = get_processed_mail_folder(account)
-        message.move(to_folder)
-        # print(f'\nSucces: Message moved to Aiscape/Processed')
-        return True
-
-    except Exception as err:
-        # print(f'\nError: Message NOT moved to Aiscape/Processed\n{err}\n')
-        return False
-
-
-# General Move Mail Message
-#
-# from exchangelib import Credentials, Account
-# import os
-
-# credentials = Credentials('test.name@mail.com', 'password')
-# account = Account('test.name@mail.com', credentials=credentials,
-# autodiscover=True)
-
-# #this will show you the account folder tree
-# print(account.root.tree())
-
-# #if to_folder is a sub folder of inbox
-# to_folder = account.inbox / 'sub_folder_name'
-
-#  #if folder is outside of inbox
-#  to_folder = account.root / 'folder_name'
-
-# for item in account.inbox.all().order_by('-datetime_received')[:1]:
-#     for attachment in item.attachments:
-#         fpath = os.path.join("C:/destination/path", attachment.name)
-#         with open(fpath, 'wb') as f:
-#             f.write(attachment.content)
-#     item.move(to_folder)
-
-# ****************************************************************
-# Part 5: Microsoft Graph API
-# ****************************************************************
-
-# https://stackoverflow.com/questions/78688831/getting-invalidauthenticationtoken-error-while-making-microsoft-graph-api-reques
-
-# Example below from ChatGPT query:
-# In using the Microsoft Graph API, how can I get the access token using
-# authorization grant flow, implicit flow or ROPC flow where user need to
-# sign in to get the access token in order to use the /me endpoint from
-# my Python code.
-
-def ms_graph_auth(client_id=AZURE_CLIENT_ID,
-                  client_secret=AZURE_CLIENT_SECRET,
-                  tenant_id=AZURE_TENANT_ID,
-                  username=f"{HOTMAIL_USER}@hotmail.com",
-                  password=HOTMAIL_PWD):
-
-    # Step 1: Define credentials
-    token_endpoint = f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token"
-
-    # Step 2: Request the access token using ROPC
-    token_data = {
-        'grant_type': 'password',
-        'client_id': client_id,
-        'client_secret': client_secret,
-        'username': username,
-        'password': password,
-        'scope': 'User.Read',
+def get_messages_from_sender(access_token, sender_email, top=100):
+    """
+    Retrieve recent messages from a specific sender.
+    """
+    url = "https://graph.microsoft.com/v1.0/me/messages"
+    headers = {"Authorization": f"Bearer {access_token}"}
+    params = {
+        "$top": top,
+        "$filter": f"from/emailAddress/address eq '{sender_email}'",
+        "$select": "id,subject,from,receivedDateTime"
     }
-    response = requests.post(token_endpoint, data=token_data)
-    tokens = response.json()
-    access_token = tokens.get('access_token')
+    resp = requests.get(url, headers=headers, params=params)
+    resp.raise_for_status()
 
-    # Step 3: Use the access token to call the Microsoft Graph API
-    headers = {'Authorization': f'Bearer {access_token}'}
-    response = requests.get('https://graph.microsoft.com/v1.0/me', headers=headers)
-    print(response.json())
-
-    return access_token
-
-
-# Stckoverflow
-# https://stackoverflow.com/questions/78569353/azuread-oidc-access-token-from-https-sts-windows-net-is-not-a-jwt-token
-
-def test_msal(client_id=AZURE_CLIENT_ID,
-              client_secret=AZURE_CLIENT_SECRET,
-              tenant_id=AZURE_TENANT_ID,
-              username=f"{HOTMAIL_USER}@hotmail.com",
-              password=HOTMAIL_PWD):
-
-    msal_app = msal.ConfidentialClientApplication(
-        client_id=client_id,
-        client_credential=client_secret,
-        # Force OAuth2 v1.0
-        oidc_authority=f"https://login.microsoftonline.com/{tenant_id}",
-        )
-
-    flow = msal_app.initiate_auth_code_flow(scopes=["User.Read"], redirect_uri="zzz")
-
-    payload = msal_app.acquire_token_by_auth_code_flow(flow, {})
-
-    headers = {'Authorization': f'Bearer {payload["access_token"]}'}
-    response = requests.get('https://graph.microsoft.com/v1.0/me', headers=headers)
-
-    return response.json()
+    return resp.json().get("value", [])
 
 
 # -----------------------------------------------------------------
-# GET Microsoft AZURE EMAILS
+
+def get_hotmail_messages(access_token, top=25):
+    url = f"https://graph.microsoft.com/v1.0/users/me/messages"
+    headers = {"Authorization": f"Bearer {access_token}"}
+    params = {"$top": top, "$select": "subject,from,receivedDateTime"}
+    response = requests.get(url, headers=headers, params=params)
+    response.raise_for_status()
+    return response.json().get("value", [])
+
+
+# -----------------------------------------------------------------
+# Get MS Hotmail Message Content
 # -----------------------------------------------------------------
 
-def get_ms_access_token(client_id=None, use_device_flow=False):
+def get_ms_message_content(access_token, message_id):
     """
-    Get access token for Microsoft Graph API using either interactive or device code flow.
-
-    If no client_id is provided, it will use Microsoft's well-known client ID for
-    development/testing purposes.
-
-    Args:
-        client_id: Azure application client ID (optional)
-        use_device_flow: If True, uses device code flow; otherwise uses interactive flow
-
-    Returns:
-        Access token string or None if authentication fails
+    Retrieve the subject, sender, and full body content of a message by ID.
     """
+    url = f"https://graph.microsoft.com/v1.0/me/messages/{message_id}"
+    headers = {"Authorization": f"Bearer {access_token}"}
+    params = {"$select": "subject,from,body,receivedDateTime"}
+    resp = requests.get(url, headers=headers, params=params)
+    resp.raise_for_status()
+    msg = resp.json()
+    
+    return {
+        "id": msg["id"],
+        "subject": msg["subject"],
+        "from": msg["from"]["emailAddress"]["address"],
+        "date": msg["receivedDateTime"],
+        "body": msg["body"]["content"]   # can be HTML or text depending on `contentType`
+    }
 
-    # Use Microsoft's well-known client ID if none provided
-    # This is specifically for personal Microsoft accounts
-    if not client_id:
-        # Microsoft Graph PowerShell client ID - allows personal accounts
-        client_id = "14d82eec-204b-4c2f-b7e8-296a70dab67e"
 
-    # Use 'common' for both personal and work accounts
-    authority = 'https://login.microsoftonline.com/common'
+# -----------------------------------------------------------------
+# MS Graph API Authentication (Using token cache)
+# -----------------------------------------------------------------
 
-    # Set up the MSAL app for public client
-    app = msal.PublicClientApplication(
-        client_id,
-        authority=authority
-    )
+DATA_DIR = os.getenv('DATA_DIR')
+CACHE_FILE = f"{DATA_DIR}/msal_cache.json"
 
-    # Required scopes for reading emails
-    scopes = ['https://graph.microsoft.com/Mail.Read']
+CLIENT_ID = "YOUR_CLIENT_ID"
+AUTHORITY = "https://login.microsoftonline.com/consumers"
+SCOPES = ["Mail.Read"]
 
-    # Try to get token silently first (from cache)
-    accounts = app.get_accounts()
-    result = None
 
-    if accounts:
-        # Try to get token silently for the first account
-        result = app.acquire_token_silent(scopes, account=accounts[0])
+def load_cache():
+    cache = msal.SerializableTokenCache()
+    if os.path.exists(CACHE_FILE):
+        with open(CACHE_FILE, "r") as f:
+            cache.deserialize(f.read())
+    return cache
+
+
+def save_cache(cache):
+    if cache.has_state_changed:
+        with open(CACHE_FILE, "w") as f:
+            f.write(cache.serialize())
+
+
+def get_token_silent():
+    cache = load_cache()
+    app = msal.PublicClientApplication(MS_HOTMAIL_CLIENT_ID,
+                                       authority=MS_HOTMAIL_AUTHORITY,
+                                       token_cache=cache)
+
+    # Try silent first
+    result = app.acquire_token_silent(SCOPES, account=None)
 
     if not result:
-        if use_device_flow:
-            # Device code flow - better for headless environments
-            print("Starting device code authentication...")
-            flow = app.initiate_device_flow(scopes=scopes)
+        # Fallback to device code flow
+        flow = app.initiate_device_flow(scopes=SCOPES)
+        if "user_code" not in flow:
+            raise Exception(f"Device flow failed: {flow}")
+        print(flow["message"])
+        result = app.acquire_token_by_device_flow(flow)
 
-            if "user_code" not in flow:
-                raise ValueError(f"Failed to create device flow: {flow}")
+    if "access_token" not in result:
+        raise Exception(f"Token acquisition failed: {result}")
 
-            print(flow["message"])
-
-            # Wait for the user to authenticate
-            result = app.acquire_token_by_device_flow(flow)
-        else:
-            # Interactive authentication
-            print("Interactive authentication required. Please sign in...")
-            result = app.acquire_token_interactive(scopes=scopes)
-
-    if 'access_token' in result:
-        return result['access_token']
-    else:
-        print("Authentication failed:")
-        print("Error:", result.get("error"))
-        print("Error description:", result.get("error_description"))
-        if result.get("error") == "invalid_client":
-            print("\nTIP: Try using the default Microsoft client by calling:")
-            print("get_ms_emails(sender_email, client_id=None)")
-        return None
-
-# -----------------------------------------------------------------
-
-def get_ms_emails(sender_email, client_id=None, use_device_flow=False):
-    """
-    Get emails from Microsoft Graph API using proper authentication flow.
-
-    Args:
-        sender_email: Email address to filter messages by sender
-        client_id: Azure application client ID (None to use Microsoft's default)
-        use_device_flow: If True, uses device code flow instead of interactive flow
-
-    Returns:
-        List of email messages or None if error occurs
-    """
-
-    # Get access token
-    access_token = get_ms_access_token(client_id=client_id, use_device_flow=use_device_flow)
-
-    if not access_token:
-        return None
-
-    # Microsoft Graph API endpoint
-    graph_api_endpoint = 'https://graph.microsoft.com/v1.0'
-
-    # Set up the request headers with the access token
-    headers = {'Authorization': f'Bearer {access_token}'}
-
-    # Define the API endpoint to search for emails from a specific sender
-    # Using $filter in Microsoft Graph API to specify the sender
-    filter_query = f"from/emailAddress/address eq '{sender_email}'"
-    messages_endpoint = f"{graph_api_endpoint}/me/messages?$filter={filter_query}"
-
-    try:
-        # Make the GET request
-        response = requests.get(messages_endpoint, headers=headers)
-
-        if response.status_code == 200:
-            # Process the email data
-            messages = response.json().get('value', [])
-            print(f"Found {len(messages)} messages from {sender_email}")
-
-            for message in messages:
-                print("Subject:", message.get('subject'))
-                print("From:", message.get('from', {}).get('emailAddress', {}).get('address'))
-                print("Received Date:", message.get('receivedDateTime'))
-                print("Body Preview:", message.get('bodyPreview'))
-                print("\n---\n")
-
-            return messages
-        else:
-            print(f"Error: {response.status_code}")
-            if response.content:
-                try:
-                    error_details = response.json()
-                    print("Error details:", error_details)
-                except:
-                    print("Raw error:", response.text)
-            return None
-
-    except requests.RequestException as e:
-        print(f"Request failed: {e}")
-        return None
+    save_cache(cache)
+    return result["access_token"]
 
 
 # *****************************************************************
@@ -743,6 +536,163 @@ def get_message_content(message):
               'html': message.body}
 
     return result
+
+
+# ****************************************************************
+# Almost End of File
+# ****************************************************************
+
+# ****************************************************************
+# Microsoft Exchange Server (Old Method)
+# ****************************************************************
+
+# -----------------------------------------------------------------
+# Get  Hotmail Account
+# -----------------------------------------------------------------
+
+# def get_hotmail_account(user=HOTMAIL_USER, pwd=HOTMAIL_PWD,
+#                         server=HOTMAIL_SERVER, retries=3):
+#     'Returns an exchangelib account object for the specified user and pwd.'
+
+#     for i in range(retries):
+#         success = True
+#         try:
+#             user_email = 'delaray@hotmail.com'
+#             credentials = Credentials(user_email, pwd)
+
+#             config = Configuration(server=server, credentials=credentials)
+
+#             account = Account(primary_smtp_address=user_email,
+#                               # credentials=credentials,
+#                               config=config,
+#                               autodiscover=False,
+#                               access_type=DELEGATE)
+#             return account
+
+#         except Exception as err:
+#             print(f'Attempt {i+1}: Error getting Hotmail account. {err}')
+#             success = False
+
+#     print(f'Error retrieving Hotmail account after {retries}\n')
+
+# -----------------------------------------------------------------
+
+# from exchangelib import (
+#     Account,
+#     Configuration,
+#     OAuth2Credentials,
+#     DELEGATE,
+#     OAUTH2,
+# )
+# from os import environ
+
+# username = environ["USERNAME"]
+# client_id = environ["CLIENT_ID"]
+# tenant_id = environ["TENANT_ID"]
+# secret_value = environ["VALUE"]
+
+# credentials = OAuth2Credentials(
+#     client_id=client_id, tenant_id=tenant_id, client_secret=secret_value
+# )
+# conf = Configuration(
+#     credentials=credentials, server="outlook.office365.com", auth_type=OAUTH2
+# )
+# account = Account(
+#     primary_smtp_address=username,
+#     autodiscover=False,
+#     config=conf,
+#     access_type=DELEGATE,
+# )
+
+# -----------------------------------------------------------------
+# Get  Hotmail Messages
+# -----------------------------------------------------------------
+
+# def get_hotmail_messages(sender_email, user=HOTMAIL_USER, pwd=HOTMAIL_PWD,
+#                          retries=3):
+
+#     account = get_hotmail_account(user=user, pwd=pwd, retries=retries)
+
+#     if account is not None:
+#         # Try a few times to avoid occasional TokenExpiredError due
+#         # to value computed before the lock was acquired.
+#         for i in range(retries):
+#             success = True
+#             try:
+#                 folder = account.inbox
+#                 items = folder.filter(sender=sender_email)
+#                 messages = list(items)
+#                 return messages
+#             except Exception as err:
+#                 print(f'Error {i+1} retrieving Hotmail messages.\n{err}\nRetrying...')
+#                 success = False
+#         print(f'Error retrieving Hotmail messages for {sender_email}\n')
+#         return None
+
+#     else:
+#         return None
+
+
+# # -----------------------------------------------------------------
+# # Move Hotmail message
+# # -----------------------------------------------------------------
+
+# def get_processed_mail_folder(account):
+#     return account.root//'Top of Information Store'//'Aiscape'//'Processed'
+
+
+# # -----------------------------------------------------------------
+
+# def move_message_to_processed(message, user=HOTMAIL_USER, pwd=HOTMAIL_PWD):
+#     account = get_hotmail_account(user=user, pwd=pwd)
+#     to_folder = get_processed_mail_folder(account)
+#     status = move_hotmail_message(message, to_folder=to_folder,
+#                                   user=user, pwd=pwd)
+#     return status
+
+
+# # -----------------------------------------------------------------
+
+# def move_hotmail_message(message, to_folder=None, user=HOTMAIL_USER,
+#                          pwd=HOTMAIL_PWD):
+
+#     try:
+#         account = get_hotmail_account(user=user, pwd=pwd)
+#         if to_folder is None:
+#             to_folder = get_processed_mail_folder(account)
+#         message.move(to_folder)
+#         # print(f'\nSucces: Message moved to Aiscape/Processed')
+#         return True
+
+#     except Exception as err:
+#         # print(f'\nError: Message NOT moved to Aiscape/Processed\n{err}\n')
+#         return False
+
+
+# General Move Mail Message
+#
+# from exchangelib import Credentials, Account
+# import os
+
+# credentials = Credentials('test.name@mail.com', 'password')
+# account = Account('test.name@mail.com', credentials=credentials,
+# autodiscover=True)
+
+# #this will show you the account folder tree
+# print(account.root.tree())
+
+# #if to_folder is a sub folder of inbox
+# to_folder = account.inbox / 'sub_folder_name'
+
+#  #if folder is outside of inbox
+#  to_folder = account.root / 'folder_name'
+
+# for item in account.inbox.all().order_by('-datetime_received')[:1]:
+#     for attachment in item.attachments:
+#         fpath = os.path.join("C:/destination/path", attachment.name)
+#         with open(fpath, 'wb') as f:
+#             f.write(attachment.content)
+#     item.move(to_folder)
 
 
 # ****************************************************************

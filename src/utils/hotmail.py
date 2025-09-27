@@ -7,6 +7,7 @@ from email.header import decode_header
 HOTMAIL_USER = os.environ['HOTMAIL_USER']
 HOTMAIL_PWD = os.environ['HOTMAIL_PWD']
 
+
 def get_emails_from_sender(username, password, sender_email, mailbox="inbox"):
     """
     Connects to your Hotmail (Outlook) IMAP server, logs in, and retrieves a list of email

@@ -1,7 +1,14 @@
-utils/__pycache__/
+.env
+.ipynb_checkpoints/
+.python-version
+.idea
+.vscode
+# Compiled Python files
+__pycache__/
 src/utils/__pycache__/
 src/tests/__pycache__/
-utils/*.py~
+
+# Backup files
 *.py~
+utils/*.py~
 doc/*.md~
-.idea
