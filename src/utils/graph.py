@@ -12,6 +12,7 @@ from neo4j import GraphDatabase
 
 # Project imports
 from utils.utils import timing
+from utils.storage import load_data, save_data
 
 # *********************************************************************
 # Neo4j Connection
@@ -21,9 +22,10 @@ from utils.utils import timing
 
 PLATFORM = platform.system()
 
+
 # --------------------------------------------------------------------------
 
-NEO4J_URI = os.environ.get('BABAR_NEO4J_URI','neo4j://localhost:7687')
+NEO4J_URI = os.environ.get('BABAR_NEO4J_URI', 'neo4j://localhost:7687')
 NEO4J_USER = os.environ.get('BABAR_NEO4J_USER', 'neo4j')
 NEO4J_PWD = os.environ.get('BABAR_NEO4J_PWD', 'neo4j')
 
@@ -40,7 +42,7 @@ def set_graph_platform(platform):
         NEO4J_USER = 'neo4j'
         NEO4J_PWD = os.environ.get('PPWD1', 'neo4j')
     else:
-        NEO4J_URI = os.environ.get('BABAR_NEO4J_URI','neo4j://localhost:7687')
+        NEO4J_URI = os.environ.get('BABAR_NEO4J_URI', 'neo4j://localhost:7687')
         NEO4J_USER = os.environ.get('BABAR_NEO4J_USER', 'neo4j')
         NEO4J_PWD = os.environ.get('BABAR_NEO4J_PWD', 'neo4j')
 
@@ -108,6 +110,7 @@ def extract_nodes(result, key='n'):
 
 SERVER = 'remote'
 
+
 # --------------------------------------------------------------------------
 # Remote Graph Predicate
 # --------------------------------------------------------------------------
@@ -127,6 +130,7 @@ def valid_result_p(result):
 
     return (result is not None) and (result != [])
 
+
 # --------------------------------------------------------------------------
 # Get Graph Node by ID
 # --------------------------------------------------------------------------
@@ -136,7 +140,7 @@ def get_node(id, uri=NEO4J_URI, user=NEO4J_USER, pwd=NEO4J_PWD):
 
     query = f"MATCH (n) WHERE ID(n) = {id} RETURN n"
     result = run_query(query, uri=uri, user=user, pwd=pwd)
-    driver.close()
+    # driver.close()
 
     return extract_nodes(result)[0] if result != [] else None
 
@@ -145,6 +149,7 @@ def get_node(id, uri=NEO4J_URI, user=NEO4J_USER, pwd=NEO4J_PWD):
 
 def node_properties(node):
     return node._properties
+
 
 # --------------------------------------------------------------------------
 # Node Keys and Labels
@@ -202,6 +207,7 @@ def nodes_to_df(nodes):
     df = pd.DataFrame(rows, columns=cols)
     return df
 
+
 # --------------------------------------------------------------------------
 # Babar Concepts
 # --------------------------------------------------------------------------
@@ -225,6 +231,7 @@ def query_nodes(uri=NEO4J_URI, user=NEO4J_USER, pwd=NEO4J_PWD,
     else:
         return None
 
+
 # ----------------------------------------------------------------
 
 def load_concepts(project_name, data_name='babar_concepts',
@@ -232,8 +239,10 @@ def load_concepts(project_name, data_name='babar_concepts',
     'Loads a nodes file for a particular project.'
 
     df = load_data(project_name, data_name, 'csv', source)
-    if 'index' in df.columns:
-        df.drop('index', axis=1, inplace=True)
+
+    if df is not None:
+        if 'index' in df.columns:
+            df.drop('index', axis=1, inplace=True)
 
     return df
 
@@ -241,7 +250,7 @@ def load_concepts(project_name, data_name='babar_concepts',
 # ----------------------------------------------------------------
 
 def save_concepts(project_name, df, data_name='babar_concepts',
-                       destination='storage', storage='data'):
+                  destination='storage', storage='data'):
     'Saves the concept relationships of a particular BU.'
 
     save_data(project_name, data_name, 'csv', df, destination)

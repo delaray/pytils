@@ -389,8 +389,10 @@ def get_message_properties(message):
               'recipients': message.to_recipients,
               'size': message.size,
               'sent': sent,
-              'datetime_sent': f'{received.month}-{received.day}-{received.year}',
-              'datetime_received': f'{received.month}-{received.day}-{received.year}'}
+              'datetime_sent':
+                  f'{sent.month}-{sent.day}-{sent.year}',
+              'datetime_received':
+                  f'{received.month}-{received.day}-{received.year}'}
 
     return result
 
