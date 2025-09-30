@@ -36,7 +36,7 @@ load_dotenv()
 
 HOTMAIL_USER = os.environ['HOTMAIL_USER']
 HOTMAIL_PWD = os.environ['HOTMAIL_PWD']
-HOTMAIL_SERVER = "outlook.office365.com"
+HOTMAIL_SERVER = os.environ.get('HOTMAIL_SERVER')
 
 
 # -----------------------------------------------------------------
@@ -49,6 +49,7 @@ GRAPH_READER_CLIENT_ID = os.getenv('GRAPH_READER_CLIENT_ID')
 # Use "consumers" for personal Hotmail/Outlook.com accounts
 GRAPH_READER_TENANT = os.getenv('GRAPH_READER_TENANT', 'consumers')
 
+# Authority URL  and scopes
 GRAPH_READER_AUTHORITY = os.getenv('GRAPH_READER_AUTHORITY')
 GRAPH_READER_SCOPES = os.getenv('GRAPH_READER_SCOPES', '').split(',')
 
@@ -158,18 +159,19 @@ def get_hotmail_messages(access_token: str, top: int = 25
 # -----------------------------------------------------------------
 
 def get_hotmail_messages_from_sender(sender_email: str, access_token: str,
-                                     top: int = 100) -> list:
+                                     top: int | None = None) -> list:
     """
     Retrieve recent messages from a specific sender.
     """
-    top = top or 100
     url = "https://graph.microsoft.com/v1.0/me/messages"
     headers = {"Authorization": f"Bearer {access_token}"}
     params = {
-        "$top": top,
         "$filter": f"from/emailAddress/address eq '{sender_email}'",
         "$select": "id,subject,from,receivedDateTime"
     }
+    if top:
+        params["$top"] = str(top)
+
     resp = requests.get(url, headers=headers, params=params)
     resp.raise_for_status()
 
@@ -407,6 +409,192 @@ def get_message_content(message):
               'html': message.body}
 
     return result
+
+
+# ------------------------------------------------------------------
+# Enhanced Hotmail Email Retrieval Function
+# ------------------------------------------------------------------
+
+def retrieve_hotmail_emails_from_sender(sender_email: str,
+                                        access_token: str | None = None,
+                                        folder: str = "inbox",
+                                        max_emails: int = 50,
+                                        include_content: bool = False,
+                                        date_filter: str | None= None) -> list:
+    """
+    Retrieve Hotmail emails from a specific sender using Microsoft Graph API.
+
+    Args:
+        sender_email (str): Email address of the sender to filter by
+        access_token (str, optional): Graph API access token. If None,
+            will attempt to get one
+        folder (str): Folder to search in (default: "inbox")
+        max_emails (int): Maximum number of emails to retrieve (default: 50)
+        include_content (bool): Whether to include full email content
+            (default: False)
+        date_filter (str): Optional date filter in ISO format
+            (e.g., "2023-01-01T00:00:00Z")
+
+    Returns:
+        list: List of email messages from the specified sender
+
+    Raises:
+        Exception: If authentication fails or API request fails
+    """
+
+    # Get access token if not provided
+    if not access_token:
+        try:
+            access_token = get_token_silent()
+        except Exception as e:
+            print(f"Failed to get access token: {e}")
+            raise
+
+    # Build the Graph API URL
+    if folder.lower() == "inbox":
+        url = "https://graph.microsoft.com/v1.0/me/messages"
+    else:
+        # For other folders, you might need to get folder ID first
+        url = (f"https://graph.microsoft.com/v1.0/me/mailFolders/"
+               f"{folder}/messages")
+
+    headers = {"Authorization": f"Bearer {access_token}"}
+
+    # Build filter parameters
+    filters = [f"from/emailAddress/address eq '{sender_email}'"]
+
+    if date_filter:
+        filters.append(f"receivedDateTime ge {date_filter}")
+
+    # Select fields to retrieve
+    if include_content:
+        select_fields = ("id,subject,from,receivedDateTime,body,"
+                         "bodyPreview,hasAttachments,importance")
+    else:
+        select_fields = ("id,subject,from,receivedDateTime,"
+                         "bodyPreview,hasAttachments,importance")
+
+    params = {
+        "$filter": " and ".join(filters),
+        "$select": select_fields,
+        "$top": min(max_emails, 1000),  # Graph API has limits
+        "$orderby": "receivedDateTime desc"
+    }
+
+    try:
+        response = requests.get(url, headers=headers, params=params)
+        response.raise_for_status()
+
+        emails = response.json().get("value", [])
+
+        # Format the response for better usability
+        formatted_emails = []
+        for email in emails:
+            from_data = email.get("from", {}).get("emailAddress", {})
+            formatted_email = {
+                "id": email.get("id"),
+                "subject": email.get("subject"),
+                "sender": from_data.get("address"),
+                "sender_name": from_data.get("name"),
+                "received_date": email.get("receivedDateTime"),
+                "preview": email.get("bodyPreview"),
+                "has_attachments": email.get("hasAttachments", False),
+                "importance": email.get("importance", "normal")
+            }
+
+            if include_content:
+                body_data = email.get("body", {})
+                formatted_email["body"] = body_data.get("content", "")
+                formatted_email["body_type"] = body_data.get("contentType",
+                                                             "text")
+
+            formatted_emails.append(formatted_email)
+
+        return formatted_emails
+
+    except requests.exceptions.RequestException as e:
+        print(f"Error retrieving emails: {e}")
+        raise
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        raise
+
+
+# ------------------------------------------------------------------
+# Quick function to get emails from sender (simplified)
+# ------------------------------------------------------------------
+
+def get_emails_from_sender(sender_email: str, max_emails: int = 25) -> list:
+    """
+    Simplified function to quickly get emails from a specific sender.
+
+    Args:
+        sender_email (str): Email address of the sender
+        max_emails (int): Maximum number of emails to retrieve (default: 25)
+
+    Returns:
+        list: List of email messages
+    """
+    try:
+        return retrieve_hotmail_emails_from_sender(
+            sender_email=sender_email,
+            max_emails=max_emails,
+            include_content=False
+        )
+    except Exception as e:
+        print(f"Error getting emails from {sender_email}: {e}")
+        return []
+
+
+# ------------------------------------------------------------------
+# Example usage function
+# ------------------------------------------------------------------
+
+def example_usage():
+    """
+    Example of how to use the Hotmail email retrieval functions.
+
+    Before running this, make sure you have set up the following environment
+    variables in your .env file:
+
+    GRAPH_READER_CLIENT_ID=your_app_client_id
+    GRAPH_READER_TENANT=consumers  (for personal accounts)
+    GRAPH_READER_AUTHORITY=https://login.microsoftonline.com/consumers
+    GRAPH_READER_SCOPES=https://graph.microsoft.com/Mail.Read
+    DATA_DIR=path_to_your_data_directory
+    """
+
+    # Example 1: Get recent emails from a specific sender
+    sender = "example@gmail.com"
+    emails = get_emails_from_sender(sender, max_emails=10)
+
+    print(f"Found {len(emails)} emails from {sender}")
+    for email in emails[:3]:  # Show first 3
+        print(f"- {email['subject']} ({email['received_date']})")
+
+    # Example 2: Get emails with full content from last week
+    from datetime import datetime, timedelta
+
+    week_ago = (datetime.now() - timedelta(days=7)).strftime(
+        "%Y-%m-%dT%H:%M:%SZ"
+    )
+
+    detailed_emails = retrieve_hotmail_emails_from_sender(
+        sender_email="important@company.com",
+        max_emails=5,
+        include_content=True,
+        date_filter=week_ago
+    )
+
+    print("\nDetailed emails from last week:")
+    for email in detailed_emails:
+        print(f"Subject: {email['subject']}")
+        print(f"From: {email['sender_name']} <{email['sender']}>")
+        print(f"Date: {email['received_date']}")
+        print(f"Preview: {email['preview'][:100]}...")
+        if email.get('body'):
+            print(f"Body length: {len(email['body'])} characters")
+        print("-" * 50)
 
 
 # ****************************************************************
