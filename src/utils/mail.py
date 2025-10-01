@@ -148,8 +148,8 @@ def get_hotmail_messages(access_token: str, top: int = 25
     url = "https://graph.microsoft.com/v1.0/me/messages"
 
     headers = {"Authorization": f"Bearer {access_token}"}
-    params = {"$top": top, "$select": "subject,from, " +
-              "receivedDateTime, sentDateTime, bodyContent",
+    params = {"$top": top,
+              "$select": "subject,from, receivedDateTime, sentDateTime",
               "$orderby": "receivedDateTime desc"
     }
 
@@ -168,8 +168,8 @@ def get_hotmail_messages_from_sender(sender_email: str, access_token: str,
     """
     url = "https://graph.microsoft.com/v1.0/me/messages"
     headers = {"Authorization": f"Bearer {access_token}"}
-    params = {"$top": top, "$select": "subject,from, " +
-              "receivedDateTime, sentDateTime, bodyContent",
+    params = {"$top": top,
+              "$select": "subject,from, receivedDateTime, sentDateTime",
               "$orderby": "receivedDateTime desc"
               }
     if top:
