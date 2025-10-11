@@ -19,6 +19,7 @@ google-cloud-storage
 google-cloud-aiplatform
 pandas-gbq
 matplotlib
+msal
 openai
 gcsfs
 gsheets
@@ -28,6 +29,7 @@ pdfreader
 py-pdf-parser
 pdfplumber
 pdfminer
+requests
 Unidecode
 exchangelib
 selenium
