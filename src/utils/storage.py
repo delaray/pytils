@@ -29,6 +29,7 @@ from google.cloud import bigquery
 from google.cloud import storage
 import gcsfs
 import pandas_gbq
+from dotenv import load_dotenv
 
 # Project Imports
 from utils.files import load_csv, save_csv, read_excel, write_excel
@@ -40,6 +41,7 @@ import logging
 # Need a better way of initilizing logger
 logger = logging.getLogger()
 
+load_dotenv(override=True)
 
 # ****************************************************************
 # DATA LOCATION
@@ -47,21 +49,22 @@ logger = logging.getLogger()
 
 # KGUTILS GCP Defaults
 # PROJECT_ID =os.environ.get('PROJECT_ID', 'babar-297510')
-PROJECT_ID = 'babar-297510'
+PROJECT_ID = os.environ.get('PROJECT_ID', 'babar-297510')
 
 # GCP Default values
-GCP_BUCKET = 'babar'
-GCP_STORAGE = 'aiscape'
-GCP_DATASET = 'aiscape'
+GCP_BUCKET = os.environ.get('GCP_BUCKET', 'babar')
+GCP_STORAGE = os.environ.get('GCP_STORAGE', 'aiscape')
+GCP_DATASET = os.environ.get('GCP_DATASET', 'aiscape')
+
 DATASET_ID = GCP_DATASET
 
 # Local FileSystem Data Directory
-DATA_DIR = os.environ['DATA_DIR']
+DATA_DIR = os.environ.get('DATA_DIR', './data')
+
 
 # ****************************************************************
 # Part 2: Google BigQuery
 # ****************************************************************
-
 
 def get_qualified_table_id(project, dataset, table_name):
     'Return the fullt quali9fied BD table path'
